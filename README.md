@@ -15,7 +15,7 @@ The two halves live on different cadences. The body changes slowly because princ
 
 Chapters never deep-link to appendix URLs. The cross-reference is always by section letter — "appendix B has the current SDK," "appendix C carries the audit-pipeline implementation per stack." Readers find the entry by topic.
 
-Every `{aside, icon=calendar}` callout in the body is a pointer into this appendix. If the body says *as of writing (2026), X was true*, the appendix is where you go to check whether X is still true.
+Every `::: aside` "as of writing" callout in the body is a pointer into this appendix. If the body says *as of writing (2026), X was true*, the appendix is where you go to check whether X is still true.
 
 ## Conventions
 
@@ -26,7 +26,7 @@ Every `{aside, icon=calendar}` callout in the body is a pointer into this append
 
 ## Status
 
-This appendix is in seed state as of 2026-05-12. The directory structure is in place; each section's `README.md` describes what lives there; per-section entries are partially seeded from the eleven `{aside, icon=calendar}` callouts in the manuscript. Fuller entries with current SDK shapes, real code, and provider-specific subsections come in subsequent passes.
+This appendix is in seed state as of 2026-05-12. The directory structure is in place; each section's `README.md` describes what lives there; per-section entries are partially seeded from the eleven `::: aside` callouts in the manuscript. Fuller entries with current SDK shapes, real code, and provider-specific subsections come in subsequent passes.
 
 ## Access
 
