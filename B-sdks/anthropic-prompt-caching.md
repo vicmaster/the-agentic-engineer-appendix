@@ -59,8 +59,8 @@ The relationship: `total_input_billed ≈ cache_creation_input_tokens × 1.25 + 
 | Model | Minimum cacheable block | Notes |
 |---|---|---|
 | Sonnet 4.6 (`claude-sonnet-4-6`) | ~1,024 input tokens | The Forge story's anchor model. |
-| Haiku 4.5 (`claude-haiku-4-5`) | ~2,048 input tokens | Higher floor than Sonnet. Easy to miss. |
-| Opus 4.7 (`claude-opus-4-7`) | ~1,024 input tokens | The current frontier-tier model. |
+| Haiku 4.5 (`claude-haiku-4-5`) | ~4,096 input tokens | Highest floor in the lineup. Easy to miss. |
+| Opus 4.8 / Opus 5 (`claude-opus-4-8` / `claude-opus-5`) | ~1,024 / ~512 input tokens | Frontier Opus-tier as of this review; the 5-family lowered the floor to ~512. |
 
 The floors above are *Anthropic-documented minimums*. Below the floor the directive is a silent no-op. Just above the floor, cache behavior can be unreliable on the seeding turn — small blocks at the edge of the floor may or may not seed depending on the exact token count after tokenization. The conservative discipline: aim for **2× the floor** on every cacheable block, not 1×.
 
@@ -169,7 +169,7 @@ If `tools` is part of the request, the tool list is part of the prefix. Re-order
 
 ### 4. Model version changes
 
-Each model version has its own cache namespace. Switching from `claude-sonnet-4-6` to `claude-sonnet-4-7` requires re-seeding every cached prefix. The transition is silent — the call succeeds, the seeding turn just costs the seeding premium again.
+Each model version has its own cache namespace. Switching from `claude-sonnet-4-6` to `claude-sonnet-5` requires re-seeding every cached prefix. The transition is silent — the call succeeds, the seeding turn just costs the seeding premium again.
 
 **Symptom:** Cost spikes on the day of a model upgrade.
 **Fix:** Plan the model upgrade as a re-seeding event. Run the seeding turns deliberately during low-traffic windows rather than letting them happen organically during peak load.

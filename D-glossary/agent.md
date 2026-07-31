@@ -3,7 +3,7 @@
 **One-line:** The loop around a model — code that takes a probabilistic output, decides what to do with it, and feeds the result back as input to the next call.
 
 **First introduced:** Ch. 1, *The Shift*.
-**Load-bearing in:** Ch. 4 (tool surfaces), Ch. 7 (orchestration), Ch. 9 (agent vs. script vs. human), Ch. 10 (when to trust the output), Ch. 11 (building the team).
+**Load-bearing in:** Ch. 4 (tool surfaces), Ch. 7 (orchestration), Ch. 9 (agent vs. script vs. human), Ch. 10 (when to trust the output), Ch. 11 (building the team), Ch. 12 (an agent's authority = what it can do, read, emit, and influence).
 
 ## The book's narrow use
 

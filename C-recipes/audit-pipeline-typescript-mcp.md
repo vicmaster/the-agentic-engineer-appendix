@@ -378,6 +378,5 @@ The principle: *the audit is the eval, run on every call, severity-graded, struc
 - Ch. 9 (Agent vs. Script vs. Human) — the deterministic-tool-with-probabilistic-caller shape this recipe is a worked example of.
 - Ch. 10 (When to Trust the Output) — the audit pipeline as the runtime trust signal for artifacts.
 - `war-stories/presentation-studio-mcp-feedback-loops.md` — the source incident behind the recipe.
-- `war-stories/presentation-studio-mcp-source.md` — the verbatim self-interview that grounds these specifics.
 - [`observability-across-stacks.md`](observability-across-stacks.md) — how to emit the audit report as observable telemetry.
 - [`runtime-trust-patterns.md`](runtime-trust-patterns.md) — the trust-the-check-not-the-claim discipline this recipe operationalizes.

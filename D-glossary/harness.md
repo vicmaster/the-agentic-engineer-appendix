@@ -3,7 +3,7 @@
 **One-line:** The runtime that wraps an agent loop, mediating between the model, its tools, and the world.
 
 **First introduced:** Ch. 4, *Tool Surfaces and Trust Boundaries*.
-**Load-bearing in:** Ch. 4, Ch. 5 (eval loops), Ch. 6 (failure modes), Ch. 7 (orchestration), Ch. 8 (observability), Ch. 9 (executor matching), Ch. 11 (team).
+**Load-bearing in:** Ch. 4, Ch. 5 (eval loops), Ch. 6 (failure modes), Ch. 7 (orchestration), Ch. 8 (observability), Ch. 9 (executor matching), Ch. 11 (team), Ch. 12 (where authority and least-privilege are enforced).
 
 ## The book's use
 

@@ -2,7 +2,7 @@
 
 ## Date / Version Context
 
-- **Date:** 2026-05-04. The afternoon the orchestration playbook was first exercised on markdown-toolkit. The bigger ticket (FINANZAS parser fix) landed as `.architecture/parser-fix-2026-05-04.md` plus the parser changes plus QA fixtures plus reviewer sign-off. The smaller ticket — *delete dead CSS rules* — became `.tickets/2026-05-04-cleanup-v1.md`. The second pass spawned `.tickets/2026-05-04-cleanup-v2.md` ~2 hours later.
+- **Date:** 2026-05-04. The afternoon the orchestration playbook was first exercised on markdown-toolkit. The bigger ticket (budget-sheet parser fix) landed as `.architecture/parser-fix-2026-05-04.md` plus the parser changes plus QA fixtures plus reviewer sign-off. The smaller ticket — *delete dead CSS rules* — became `.tickets/2026-05-04-cleanup-v1.md`. The second pass spawned `.tickets/2026-05-04-cleanup-v2.md` ~2 hours later.
 - **Project:** markdown-toolkit — WXT (Manifest V3) Chrome extension. One developer, one codebase, six role-specialized Claude Code sub-agents. The `.claude/ORCHESTRATION.md` playbook names the wave structure: PM + Architect (Wave 1, parallel), Engineer (Wave 2), QA + Reviewer (Wave 3, parallel).
 - **Surface for this story:** the v1 cleanup ticket and the orchestration playbook's review wave. The technical surface (CSS class deletions in the side-panel UI) is incidental. The story is about *what counts as a complete sweep*.
 - **Glossary, used in this writeup:** *Wave* = a phase in the orchestration playbook (e.g. Wave 3: QA + Reviewer). *Reviewer wave* = the third wave, where `code-reviewer` and `qa-automation` run in parallel against the engineer's changes. *Nit* = a reviewer-flagged item that doesn't block approval — typically minor, often a cleanup or rename. *Sweep* = the act of removing all instances of a class of code (here: dead CSS rules) from a codebase. *Cleanup ticket* = a follow-up ticket that captures reviewer nits as a separate piece of work, so the original PR can land and the nits land separately.
@@ -11,7 +11,7 @@
 
 Use the orchestration playbook to do a small, well-defined cleanup.
 
-The FINANZAS parser fix was the marquee work of the day — three independent defects diagnosed, four implementation steps, fixtures landed, reviewer approved. As part of the reviewer's sign-off, seven nits were noted. The biggest of the seven (Nit 5) was "delete these dead CSS classes": three names — `.brand-text`, `.tool-item-body`, `.tool-list-soon` — that the reviewer had grepped and confirmed were referenced nowhere.
+The budget-sheet parser fix was the marquee work of the day — three independent defects diagnosed, four implementation steps, fixtures landed, reviewer approved. As part of the reviewer's sign-off, seven nits were noted. The biggest of the seven (Nit 5) was "delete these dead CSS classes": three names — `.brand-text`, `.tool-item-body`, `.tool-list-soon` — that the reviewer had grepped and confirmed were referenced nowhere.
 
 The team's pattern, defensible and clean, was *don't block the original PR on the nits; spin up a small ticket for them*. So `.tickets/2026-05-04-cleanup-v1.md` got written. The engineer worked through the seven nits; the dead-CSS sub-task was three deletions plus the JSX nodes that referenced them. Five classes total when the engineer was done (the engineer found two more in the JSX during the work). The v1 reviewer approved on second pass.
 

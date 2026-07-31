@@ -292,7 +292,7 @@ The playbook's Wave 2 rule that prevents the worst orchestration failure mode (`
 
 ### The artifact directory after a wave
 
-After Wave 1 fires for the FINANZAS bug:
+After Wave 1 fires for the budget-sheet bug:
 
 ```
 .tickets/2026-05-04-bug-fixes-v1.md          # PM's scoped ticket
@@ -304,7 +304,7 @@ After Wave 3 finishes:
 ```
 .tickets/2026-05-04-bug-fixes-v1.md
 .architecture/parser-fix-2026-05-04.md
-.qa/2026-05-04-parser-finanzas.test.ts       # QA's fixtures for all three defects
+.qa/2026-05-04-parser-budget-sheet.test.ts       # QA's fixtures for all three defects
 .reviews/2026-05-04-bug-fixes-v1.md          # Reviewer's sign-off against the full taxonomy
 ```
 

@@ -47,7 +47,7 @@ The fastest pre-flight check before drafting an orchestration plan: open the rel
 
 ### Context window
 
-**Limit:** Claude Code sessions hold the full conversation history, system prompt, tool definitions, and tool outputs in the context window. The window size depends on the model — as of Q2 2026, Sonnet 4.6 / Opus 4.7 with extended context support roughly **1M tokens** when the `[1m]` model variant is selected (e.g. `claude-opus-4-7[1m]`); the default Sonnet 4.6 / Haiku 4.5 windows are roughly **200K tokens**.
+**Limit:** Claude Code sessions hold the full conversation history, system prompt, tool definitions, and tool outputs in the context window. The window size depends on the model — as of Q3 2026, the current frontier models (the Claude 5 family, Opus 4.8, Sonnet 4.6) support roughly **1M tokens** of context, some via a `[1m]` model variant (e.g. `claude-opus-4-8[1m]`); Haiku 4.5 caps at roughly **200K tokens**.
 
 **Implication for long sessions:** the harness automatically compacts long histories when the window fills, summarizing older turns. Compaction is lossy — load-bearing details get dropped. See Ch. 6's *context collapse* sidebar. Mitigation: return pointers, not bytes, from your tools (Ch. 3); start fresh sessions for unrelated work rather than accreting history.
 
@@ -87,7 +87,7 @@ The Claude Code limits above are *specific*; every harness has its own version. 
 | MCP server lifecycle | Session-bound | Caller-managed | Editor-bound | Caller-managed |
 | Async-input window | 89ms (AskUserQuestion) | N/A (no equivalent tool) | Caller-defined | Caller-managed |
 | Delegation depth | 1 (`Agent` tool top-level only) | Configurable (handoffs) | N/A (single agent) | Caller-defined |
-| Context window | 200K / 1M | 128K (GPT-4o) | Editor-managed | Model-dependent |
+| Context window | 200K / 1M | current GPT-tier (provider-dependent) | Editor-managed | Model-dependent |
 | Tool count (soft) | ~50 useful | ~64 useful | Editor-curated | Caller-managed |
 | Permission system | settings.json (allow/ask/deny) | Per-tool function | Workspace-scoped | None (caller-managed) |
 | Auto-memory | Per-project MEMORY.md | None native | None native | None native |

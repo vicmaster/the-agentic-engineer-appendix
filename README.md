@@ -27,8 +27,8 @@ Every `::: aside` "as of writing" callout in the body is a pointer into this app
 
 ## Status
 
-This appendix is in seed state as of 2026-05-12. The directory structure is in place; each section's `README.md` describes what lives there; per-section entries are partially seeded from the eleven `::: aside` callouts in the manuscript. Fuller entries with current SDK shapes, real code, and provider-specific subsections come in subsequent passes.
+This is a living document, last reviewed 2026-07-31, shipped alongside the book's first public release. The `war-stories/` collection is complete — 40 incident writeups across 8 projects. The **A-models**, **B-sdks**, **C-recipes**, and **D-glossary** sections are seeded from the manuscript's dated `::: aside` callouts and deepen over time; that's the point of splitting them from the body, so they update on their own cadence as models, SDKs, and harnesses move underneath. Every entry carries a `Last reviewed` date so you can tell at a glance how current it is.
 
 ## Access
 
-The repository is currently private while the book is in draft. The published edition will carry the canonical public URL in the front matter and on the inside back cover.
+This repository is public. The book's front matter carries the canonical URL; in a print copy it's on the inside back cover. Tool-specific recipes especially accumulate faster from a working community than from one author — see `C-recipes/README.md` for contribution guidance.

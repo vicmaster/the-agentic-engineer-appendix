@@ -339,7 +339,7 @@ External capabilities (databases, APIs, custom tooling) integrate via MCP. Serve
       }
     },
     "leads-crm": {
-      "url": "https://leads-crm.magmalabs.io/mcp",
+      "url": "https://leads-crm.example.com/mcp",
       "transport": "http",
       "headers": {
         "Authorization": "Bearer ${LEADS_CRM_TOKEN}"
