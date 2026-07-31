@@ -10,6 +10,7 @@ The two halves live on different cadences. The body changes slowly because princ
 - **B-sdks** — SDK examples per provider; API field names; harness behaviors and limits; per-provider quirks the body refers to in dated callouts.
 - **C-recipes** — tool-specific recipes, audit pipelines, observability stacks, team primitives — the runnable patterns that show how a body principle lands in a given stack.
 - **D-glossary** — canonical, slightly-tighter-than-casual definitions for the book's load-bearing vocabulary.
+- **war-stories** — the real incidents behind the book. Each `war-stories/*.md` pointer in the body names one of these self-contained writeups: what was attempted, what went wrong, how it was found, what fixed it, and the durable lesson. Companion narrative material, not dated reference — the tools in the stories are dated, the failure shapes aren't. See [war-stories/README.md](war-stories/README.md).
 
 ## How chapters cross-reference the appendix
 
