@@ -25,7 +25,7 @@ The v1 reviewer, on the *second* approval pass after the deletions had landed, f
 
 The discovery is small in stakes (two more lines of dead CSS) and large in implications. The v1 sweep had been declared complete. The reviewer had approved. The ticket had closed. And there were still dead classes in the codebase that matched the same shape as the ones the sweep had removed.
 
-The two missed rules weren't subtle. They were in the same stylesheet. They had the same `.tool-item-*` prefix as the deleted `.tool-item-body`. A `grep -r '\.tool-item-' src/` would have surfaced all four `.tool-item-*` classes; the engineer had deleted the two the reviewer named and left the two the reviewer hadn't.
+The two missed rules weren't subtle. They were in the same stylesheet. They had the same `.tool-item-*` prefix as the deleted `.tool-item-body`. A `grep -r '\.tool-item-' src/` would have surfaced every `.tool-item-*` class in one shot; the engineer had deleted what the reviewer named and left what the reviewer hadn't.
 
 This is the structural defect. The sweep's *methodology* was *delete the classes the reviewer named*. That methodology produces a complete sweep only if the reviewer's enumeration was complete. The reviewer was a careful agent doing careful work — and still missed two rules out of an obvious cluster, because reviewers don't grep exhaustively; they read code, they notice dead stuff, they list what they noticed.
 
