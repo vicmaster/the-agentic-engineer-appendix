@@ -219,7 +219,7 @@ The infrastructure-claim test from Ch. 3: *for every provider feature you've tur
 
 ## Cross-references
 
-- Ch. 3 (Context as a Resource) — full chapter treatment.
+- Ch. 3 (Context as a Budget) — full chapter treatment.
 - Ch. 8 (Observability) — the bucketing pattern recast as a verification record (`provider.cache.bucket` metric).
 - `war-stories/forge-prompt-cache-minimum.md` — the source incident.
 - [`../C-recipes/observability-across-stacks.md`](../C-recipes/observability-across-stacks.md) — Implementation 1 (the Ruby `compute_cache_status` method, the `:cached`/`:seeded`/`:below_floor`/`:none` buckets).

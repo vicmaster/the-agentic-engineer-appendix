@@ -345,7 +345,7 @@ Every probabilistic-output system has a version of this question; the discipline
 
 - Ch. 10 (When to Trust the Output) — full chapter treatment.
 - Ch. 4 (Tool Surfaces and Trust Boundaries) — the gate/verify/trust framework at design time; this recipe is the runtime version.
-- Ch. 5 (Eval Loops Are the Product) — the audit-pipeline mechanism this recipe leans on for Layer 2.
+- Ch. 5 (Verification in the Production Loop) — the audit-pipeline mechanism this recipe leans on for Layer 2.
 - Ch. 6 (Failure Modes Catalog) — the *partial sweeps treated as complete* failure mode Layer 1 defends against.
 - Ch. 8 (Observability for Probabilistic Systems) — the verification-record mechanism this recipe leans on for Layer 3.
 - Ch. 12 (Security and Trust Under Adversarial Input) — the adversarial extension of these runtime-trust layers: the same verify-outside-the-model discipline, pointed at a hostile input.

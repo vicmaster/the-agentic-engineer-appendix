@@ -368,7 +368,7 @@ The shapes recur. The names won't.
 
 - Ch. 9 (Agent vs. Script vs. Human) — `disable-model-invocation` and the executor-matching framework.
 - Ch. 10 (When to Trust the Output) — permissions as the runtime gate mechanism.
-- Ch. 11 (Building the Team Around Agentic Systems) — memory + skills + sub-agents as the structural primitives.
+- Ch. 11 (Team Structure for Agentic Systems) — memory + skills + sub-agents as the structural primitives.
 - `war-stories/coide-ship-feature.md` — `disable-model-invocation` anchor.
 - `war-stories/magmalabs-delegated-skill-decay.md` — rules-with-why in memory.
 - `war-stories/leads-crm-vision-as-agent-memory.md` — specialist + surface pattern.

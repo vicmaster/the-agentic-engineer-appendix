@@ -43,7 +43,7 @@ and an MCP tool surface.*
 - [The Tool Surface Is a Second Product](leads-crm-mcp-second-surface.md)
 - [The Rails App That Ran Until It Deployed](leads-crm-heroku-boot-deployment-contracts.md)
 - [Ninety-One Files and No Backfill](leads-crm-directory-linking-backfill.md)
-- [The Invisible False Case](leads-crm-settings-toggle-false-path.md)
+- [The Toggle That Showed the Database](leads-crm-settings-toggle-false-path.md)
 - [VISION.md as Agent Memory](leads-crm-vision-as-agent-memory.md)
 
 ## canvas-mcp

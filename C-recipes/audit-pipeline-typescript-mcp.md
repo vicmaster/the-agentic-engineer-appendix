@@ -1,6 +1,6 @@
 # Audit Pipeline — TypeScript MCP Server (presentation-studio-mcp)
 
-**Source aside:** Ch. 5 (eval loops are the product).
+**Source aside:** Ch. 5 (verification in the production loop).
 **Source incident:** `war-stories/presentation-studio-mcp-feedback-loops.md`.
 **Last reviewed:** 2026-05-12.
 **Valid as of:** Q2 2026, against `presentation-studio-mcp` v0.1.0 (commit `ee61fa1`, 2026-04-09).
@@ -374,7 +374,7 @@ The principle: *the audit is the eval, run on every call, severity-graded, struc
 
 ## Cross-references
 
-- Ch. 5 (Eval Loops Are the Product) — full chapter treatment of the *audit is the eval* principle.
+- Ch. 5 (Verification in the Production Loop) — full chapter treatment of the *audit is the eval* principle.
 - Ch. 9 (Agent vs. Script vs. Human) — the deterministic-tool-with-probabilistic-caller shape this recipe is a worked example of.
 - Ch. 10 (When to Trust the Output) — the audit pipeline as the runtime trust signal for artifacts.
 - `war-stories/presentation-studio-mcp-feedback-loops.md` — the source incident behind the recipe.

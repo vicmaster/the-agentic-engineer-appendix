@@ -2,7 +2,7 @@
 
 **One-line:** The test infrastructure most teams build to grade probabilistic outputs against a golden set, typically offline in CI.
 
-**First introduced:** Ch. 5, *Eval Loops Are the Product*.
+**First introduced:** Ch. 5, *Verification in the Production Loop*.
 **Load-bearing in:** Ch. 5, Ch. 8 (observability — forward-pointers to replay), Ch. 11 (only as a *contrast* — see below).
 
 ## The book's use

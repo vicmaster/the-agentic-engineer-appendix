@@ -1,6 +1,6 @@
 # Team Primitives — Cross-Vendor PRs, Gating Checklists, Role-Separated Playbooks
 
-**Source aside:** Ch. 11 (building the team around agentic systems).
+**Source aside:** Ch. 11 (team structure for agentic systems).
 **Source incidents:** `war-stories/leads-crm-vision-as-agent-memory.md`, `leads-crm-codex-pr1.md`, `markdown-toolkit-role-separation-solo.md`, `magmalabs-delegated-skill-decay.md`.
 **Last reviewed:** 2026-05-12.
 **Valid as of:** Q2 2026, against the Claude Code harness used through the manuscript.
@@ -29,7 +29,7 @@ The four implementations below each enact these properties differently. The prop
 
 **Claim:** *agent-written code has been read by a bias surface distinct from the one that wrote it.*
 
-**Source incident:** `leads-crm-codex-pr1.md`. Claude built a Settings form with a Rails `check_box` false-path bug (unchecked-checkbox case didn't persist). The bug shipped and sat. Codex, pointed at the same repo independently, opened PR #1 from branch `codex/fix-settings-toggle-autosave` and caught it. Two commits landed: `73cae83 Fix settings boolean toggle persistence` and the merge `3b28c03`.
+**Source incident:** `leads-crm-codex-pr1.md`. Claude built a Settings form whose boolean On/Off toggles highlighted the saved value instead of the clicked control, and saved nothing unless the user found a separate *Save All Changes* button, so flipped toggles looked ignored and didn't persist. The bug shipped and sat. Codex, pointed at the same repo independently, opened PR #1 from branch `codex/fix-settings-toggle-autosave` and caught it. Two commits landed: `73cae83 Fix settings boolean toggle persistence` and the merge `3b28c03`.
 
 The *catch* matters more than the bug. Same-vendor review is closer to self-review than peer review — two Claude instances share training data, priors, and the same patterns of *what counts as suspicious*. Two different vendors have different bias surfaces; the *non-overlap* is the value, not the superiority.
 
@@ -89,7 +89,7 @@ Strip the `codex/` prefix and the same commits look like solo work. The prefix i
 The *capturing the signal* discipline: when Vendor B catches a bug Vendor A shipped, write a one-line entry into `MEMORY.md` (or its equivalent in the harness) naming the class of bug and the pre-flight check that would have caught it:
 
 ```markdown
-- [Claude tends to miss Rails false-path semantics in form helpers](claude-rails-false-path.md) — pre-flight `check_box` review before merging form changes
+- [Claude tends to wire UI state to stored values instead of the control](claude-ui-state-from-stored-value.md) — before merging form changes, click each new control and confirm it shows the change and saves it
 ```
 
 That's the chapter's third leg surfacing here — the cross-vendor PR is a data point about the resident agent's blind spots, not just a bug fix. Throwing away the signal because the bug is gone leaves evidence on the table.
@@ -488,7 +488,7 @@ Every agentic-team system will have a version of each. The discipline is naming 
 
 ## Cross-references
 
-- Ch. 11 (Building the Team Around Agentic Systems) — full chapter treatment.
+- Ch. 11 (Team Structure for Agentic Systems) — full chapter treatment.
 - Ch. 7 (Orchestration Patterns) — the *role-separated waves* primitive sits alongside the chapter's existing fan-out shapes.
 - Ch. 8 (Observability for Probabilistic Systems) — the branch-name provenance and the operator-atrophy gap are observability-discipline arguments; see [`observability-across-stacks.md`](observability-across-stacks.md) for the verification-record version of the same shape.
 - Ch. 10 (When to Trust the Output) — the gates-in-skill move is a runtime trust mechanism; see [`runtime-trust-patterns.md`](runtime-trust-patterns.md).

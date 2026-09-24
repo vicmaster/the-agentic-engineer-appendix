@@ -50,7 +50,7 @@ the production envelope* a story ran in, this catalog is the routing layer.
   - `forge-keyword-router-natural-language.md` — the keyword router met the Spanish question (LLM fallback for natural language).
   - `forge-ops-analyst-launch-attack.md` — the launch attack that found no authority to hijack (injection/jailbreak containment on a read-only capability).
   - `forge-redaction-never-fired.md` — the gate that hasn't fired (a security control that's spec-covered but never exercised in production).
-- **Anchors:** Ch. 1 (The Shift), Ch. 3 (Context as a Resource), Ch. 5 (Eval Loops Are the Product), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 12 (Security and Trust Under Adversarial Input).
+- **Anchors:** Ch. 1 (The Shift), Ch. 3 (Context as a Budget), Ch. 5 (Verification in the Production Loop), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 12 (Security and Trust Under Adversarial Input).
 - **Related appendix entries:**
   - [`../B-sdks/anthropic-prompt-caching.md`](../B-sdks/anthropic-prompt-caching.md)
   - [`observability-across-stacks.md`](observability-across-stacks.md) (Implementation 1 + 2)
@@ -68,8 +68,8 @@ the production envelope* a story ran in, this catalog is the routing layer.
   - `leads-crm-vision-as-agent-memory.md` — `VISION.md` as a gating artifact plus a `/ship-feature` skill.
   - `leads-crm-directory-linking-backfill.md` — ninety-one files and no backfill (a feature commit that shipped no migration for existing rows).
   - `leads-crm-heroku-boot-deployment-contracts.md` — the Rails app that ran until it deployed (deployment-only contracts the dev env hid).
-  - `leads-crm-settings-toggle-false-path.md` — the invisible false case (a Rails `check_box` missing its hidden field; unchecked toggles silently didn't persist).
-- **Anchors:** Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 11 (Building the Team Around Agentic Systems).
+  - `leads-crm-settings-toggle-false-path.md` — the toggle that showed the database (On/Off toggles highlighted from the saved value, not the click, and saved only via a separate Save All button; flipped toggles looked ignored and silently didn't persist).
+- **Anchors:** Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 11 (Team Structure for Agentic Systems).
 - **Related appendix entries:**
   - [`observability-across-stacks.md`](observability-across-stacks.md) (Implementation 4)
   - [`team-primitives-cross-vendor.md`](team-primitives-cross-vendor.md) (Primitives 1 + 2)
@@ -100,7 +100,7 @@ the production envelope* a story ran in, this catalog is the routing layer.
   - `canvas-mcp-half-built-evaluate.md` — 629 lines of implication (an uncommitted `evaluate.ts` implies a scorer the project doesn't ship).
   - `canvas-mcp-feature-multiplicative-renderer.md` — phase 1 mockups after phase 3 (per-phase tests never cross-validate older output).
   - `canvas-mcp-design-md-colors-parser.md` — box shadows in the colors map (a parser that validated shape, not meaning).
-- **Anchors:** Ch. 3 (Context as a Resource), Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 5 (Eval Loops Are the Product), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 9 (Agent vs. Script vs. Human).
+- **Anchors:** Ch. 3 (Context as a Budget), Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 5 (Verification in the Production Loop), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 9 (Agent vs. Script vs. Human).
 
 #### coide — Desktop GUI for Claude Code
 
@@ -111,7 +111,7 @@ the production envelope* a story ran in, this catalog is the routing layer.
   - `coide-askuserquestion.md` — the picker that couldn't exist (the CLI auto-resolves the tool in ~89ms).
   - `coide-ship-feature.md` — the skill that auto-invoked (autonomous side-effects without a consent gate).
   - `coide-memory-drift.md` — persistent memory drifting from current code.
-- **Anchors:** Ch. 3 (Context as a Resource), Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 9 (Agent vs. Script vs. Human).
+- **Anchors:** Ch. 3 (Context as a Budget), Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 9 (Agent vs. Script vs. Human).
 - **Related appendix entries:**
   - [`../B-sdks/harness-limits.md`](../B-sdks/harness-limits.md) (AskUserQuestion auto-resolution window)
   - [`observability-across-stacks.md`](observability-across-stacks.md) (Implementation 3)
@@ -127,7 +127,7 @@ the production envelope* a story ran in, this catalog is the routing layer.
   - `markdown-toolkit-role-separation-solo.md` — role separation, not team size.
   - `markdown-toolkit-cellText-vestigial-selector.md` — the selector no one questioned (a vestigial `tr` that survived every review).
   - `markdown-toolkit-diagnostic-badge.md` — the badge that made the bug landable (*"9 rows · 1 col"* user-side observability).
-- **Anchors:** Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 10 (When to Trust the Output), Ch. 11 (Building the Team Around Agentic Systems).
+- **Anchors:** Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 8 (Observability for Probabilistic Systems), Ch. 10 (When to Trust the Output), Ch. 11 (Team Structure for Agentic Systems).
 - **Related appendix entries:**
   - [`../B-sdks/harness-limits.md`](../B-sdks/harness-limits.md) (sub-agent delegation depth)
   - [`team-primitives-cross-vendor.md`](team-primitives-cross-vendor.md) (Primitives 1 + 3)
@@ -144,7 +144,7 @@ the production envelope* a story ran in, this catalog is the routing layer.
   - `presentation-studio-mcp-pillow-spawn-per-operation.md` — the leak the agent couldn't see (spawn-per-operation vs. a leaky persistent Pillow worker).
   - `presentation-studio-mcp-jsonrpc-stdio-fallback.md` — sixty lines of insurance (a hand-rolled JSON-RPC fallback for when the SDK breaks).
   - `presentation-studio-mcp-denormalized-brand.md` — the brand that wasn't there (denormalizing brand data so artifacts survive registry drift).
-- **Anchors:** Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 5 (Eval Loops Are the Product), Ch. 6 (Failure Modes Catalog), Ch. 9 (Agent vs. Script vs. Human), Ch. 10 (When to Trust the Output).
+- **Anchors:** Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 5 (Verification in the Production Loop), Ch. 6 (Failure Modes Catalog), Ch. 9 (Agent vs. Script vs. Human), Ch. 10 (When to Trust the Output).
 - **Related appendix entries:**
   - [`audit-pipeline-typescript-mcp.md`](audit-pipeline-typescript-mcp.md) (deep implementation)
   - [`runtime-trust-patterns.md`](runtime-trust-patterns.md) (Layer 2 source)
@@ -158,7 +158,7 @@ the production envelope* a story ran in, this catalog is the routing layer.
 - **Repo state:** Private. Personal configuration; no public artifact.
 - **War-story files:**
   - `magmalabs-delegated-skill-decay.md` — *what you delegate is what decays* (operator-side skill atrophy).
-- **Anchors:** Ch. 8 (Observability for Probabilistic Systems), Ch. 9 (Agent vs. Script vs. Human), Ch. 11 (Building the Team Around Agentic Systems).
+- **Anchors:** Ch. 8 (Observability for Probabilistic Systems), Ch. 9 (Agent vs. Script vs. Human), Ch. 11 (Team Structure for Agentic Systems).
 - **Related appendix entries:**
   - [`../B-sdks/harness-affordances.md`](../B-sdks/harness-affordances.md) (auto-memory layer, consent gates)
   - [`team-primitives-cross-vendor.md`](team-primitives-cross-vendor.md) (Primitive 4 — operator-atrophy discipline)

@@ -369,8 +369,8 @@ The principle: *log the claim, not just the call; alert on what didn't happen, n
 ## Cross-references
 
 - Ch. 8 (Observability for Probabilistic Systems) — full chapter treatment.
-- Ch. 3 (Context as a Resource) — origin of the cache-bucket classifier shape.
-- Ch. 5 (Eval Loops Are the Product) — the audit pipeline as the runtime cousin of observability; see [`audit-pipeline-typescript-mcp.md`](audit-pipeline-typescript-mcp.md) for the artifact-side recipe.
+- Ch. 3 (Context as a Budget) — origin of the cache-bucket classifier shape.
+- Ch. 5 (Verification in the Production Loop) — the audit pipeline as the runtime cousin of observability; see [`audit-pipeline-typescript-mcp.md`](audit-pipeline-typescript-mcp.md) for the artifact-side recipe.
 - Ch. 6 (Failure Modes Catalog) — the layering shape that produces the *function returned ≠ work completed* family of bugs all four implementations defend against.
 - `war-stories/forge-prompt-cache-minimum.md`, `forge-layered-status.md`, `coide-memory-drift.md`, `leads-crm-mcp-second-surface.md` — the four source incidents.
 - [`../B-sdks/anthropic-prompt-caching.md`](../B-sdks/anthropic-prompt-caching.md) — the SDK fields the cache-bucket classifier reads.

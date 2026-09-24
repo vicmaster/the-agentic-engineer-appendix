@@ -1,4 +1,4 @@
-# Agentic Dev Book — Living Appendix
+# The Agentic Engineer — Living Appendix
 
 This is the dated half of *The Agentic Engineer*. The book's body holds durable principles; this appendix holds the time-sensitive specifics that motivate them — model names, SDK shapes, harness limits, current implementations, current pricing context.
 
