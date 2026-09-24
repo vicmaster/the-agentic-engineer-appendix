@@ -43,7 +43,9 @@ The fastest pre-flight check before drafting an orchestration plan: open the rel
 
 **War story:** `markdown-toolkit-subagent-depth.md`. The first orchestration playbook had a `supervisor-orchestrator` sub-agent at the top of the org chart. The pattern was structurally impossible; the fix was a doc rewrite that moved the orchestrator role into the top-level session.
 
-**Implication for orchestration design:** the orchestrator role lives in the top-level session, full stop. No org chart at the sub-agent layer. Sub-agents do bounded work and return; they do not coordinate.
+**Implication for orchestration design:** under this limit, the orchestrator role lives in the top-level session. No org chart at the sub-agent layer. Sub-agents do bounded work and return; they do not coordinate.
+
+**Recheck (2026-09):** later Claude Code versions appear to make the spawning tool available to sub-agents as well, so depth = 1 may no longer hold in the version you're running. Run pre-flight item 1 below (a throwaway sub-agent that tries to spawn another) before designing around either answer. Even where nesting works, the Ch. 7 advice to keep the orchestrator's seams in one place still applies.
 
 ### Context window
 
