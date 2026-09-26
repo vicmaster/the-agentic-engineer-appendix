@@ -89,15 +89,15 @@ the production envelope* a story ran in, this catalog is the routing layer.
 
 #### canvas-mcp — AI Design Canvas (open source)
 
-- **Stack:** TypeScript monorepo, pnpm workspaces, Zod schemas, MCP SDK over stdio, local viewer over HTTP. Vanilla canvas-rendering, no third-party design library.
-- **Date range:** Phase 1 in 2026-03; Phase 2 + 3 on 2026-03-21. The viewer-lifecycle bug surfaced 2026-04-11.
+- **Stack:** Single-package Node/TypeScript npm project, Zod for tool parameters, MCP SDK over stdio, local viewer over plain `node:http`. Renders a scene graph to HTML/CSS and screenshots it in headless Chromium via Puppeteer; no third-party design library. Now renamed framesmith.
+- **Date range:** Repo started 2026-03-17; Phase 1 on 2026-03-19; Phase 2 + 3 on 2026-03-21; viewer 2026-03-25; DESIGN.md import 2026-04-01. The viewer-lifecycle bug was fixed 2026-04-11; `canvas_evaluate` committed 2026-05-11.
 - **Repo state:** Public. Open source.
 - **War-story files:**
-  - `canvas-mcp-viewer-lifecycle.md` — *the tool that lies about state it doesn't own* (viewer URLs 404 after the session ends).
+  - `canvas-mcp-viewer-lifecycle.md` — *the tool that lies about state it doesn't own* (viewer URLs die with the session that printed them).
   - `canvas-mcp-two-shadow-apis.md` — parallel sub-agents shipping incompatible APIs that now have to be supported forever.
   - `canvas-mcp-base64-png-context.md` — the bytes that stayed in the conversation (base64 PNGs compounding in context; return URLs instead).
   - `canvas-mcp-human-watching-is-customer.md` — the human watching is the customer (the operator is a co-consumer of the tool's output).
-  - `canvas-mcp-half-built-evaluate.md` — 629 lines of implication (an uncommitted `evaluate.ts` implies a scorer the project doesn't ship).
+  - `canvas-mcp-half-built-evaluate.md` — 629 lines of implication (an uncommitted `evaluate.ts` implied a scorer the repository couldn't build, until it shipped as `canvas_evaluate` on 2026-05-11).
   - `canvas-mcp-feature-multiplicative-renderer.md` — phase 1 mockups after phase 3 (per-phase tests never cross-validate older output).
   - `canvas-mcp-design-md-colors-parser.md` — box shadows in the colors map (a parser that validated shape, not meaning).
 - **Anchors:** Ch. 3 (Context as a Budget), Ch. 4 (Tool Surfaces and Trust Boundaries), Ch. 5 (Verification in the Production Loop), Ch. 6 (Failure Modes Catalog), Ch. 7 (Orchestration Patterns), Ch. 9 (Agent vs. Script vs. Human).

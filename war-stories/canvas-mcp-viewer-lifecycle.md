@@ -3,8 +3,8 @@
 ## Date / Version Context
 
 - **Date:** The bug existed from ~2026-03-25 (commit `a3cf691`, the day the in-process viewer landed) until 2026-04-11 (commit `3e4201f`, the day the standalone viewer + JSON persistence shipped). Roughly seventeen days of leaked promises.
-- **Project:** canvas-mcp v0.1.0 — an open-source MCP server that gives any AI assistant a visual design canvas. Stack: Node 20 / TypeScript / `@modelcontextprotocol/sdk` / Express / Puppeteer.
-- **Tool surface:** 13 MCP tools over stdio. The relevant ones are `screenshot()` and `viewer_url()`, both of which return URLs like `http://localhost:3001/canvas/abc` pointing at an Express server that ran inside the MCP server process.
+- **Project:** canvas-mcp v0.1.0 — an open-source MCP server that gives any AI assistant a visual design canvas. Stack: Node / TypeScript / `@modelcontextprotocol/sdk` / Puppeteer, as a single npm package. The viewer is a plain `node:http` server, not Express.
+- **Tool surface:** MCP tools over stdio: 14 when the viewer landed, 16 by the fix. Three of them handed back viewer URLs: `canvas_create` (a `viewerUrl` field), `batch_design` (a `View live:` line appended to the response), and `viewer_url`. The URLs looked like `http://localhost:3001/canvas/abc` and pointed at an HTTP server that ran inside the MCP server process. (`screenshot` itself kept returning a PNG.)
 - **Glossary, used in this writeup:** *MCP server* = a process the agent's harness (Claude Code, Cursor, etc.) spawns to expose a set of tools. *Stdio transport* = the MCP protocol's primary transport — the harness writes JSON-RPC to the server's stdin and reads from stdout. *Session* = the lifetime of one harness invocation; closing the chat ends the session. *Side-effect emitter* = a tool that does more than transform input to output — it spawns processes, writes files, or implies the existence of resources that outlive the call.
 
 ## What Was Being Attempted
@@ -12,7 +12,7 @@
 Two tightly-coupled things:
 
 1. **Render canvases for an agent to see.** The MCP server takes a JSON description of a design (frames, text, icons), renders it via HTML/CSS in headless Chromium, and produces a PNG.
-2. **Show the canvas to a human.** The base64 PNG in the tool response is technically sufficient — the agent can "see" the canvas — but agents aren't the customer. The human watching the agent is. So the project added an Express viewer at `localhost:3001` and started returning viewer URLs in tool responses (`http://localhost:3001/canvas/abc`) instead of (or in addition to) embedded bytes.
+2. **Show the canvas to a human.** The base64 PNG in the tool response is technically sufficient — the agent can "see" the canvas — but agents aren't the customer. The human watching the agent is. So the project added a built-in HTTP viewer (port 3001, then 3002, 3003 and so on for concurrent sessions) and started returning viewer URLs in tool responses (`http://localhost:3001/canvas/abc`) alongside the existing screenshot bytes.
 
 The viewer URL flow felt clean: the agent renders, the tool response includes a clickable URL, the human opens it in a browser tab and sees the canvas update live. Better than embedded base64 (which clutters context and can't be re-opened), better than a separate file path (which the human has to know how to render).
 
@@ -22,7 +22,7 @@ It worked in the chat. Designs rendered. URLs were clickable. The human saw the 
 
 For about two weeks, every viewer URL the tool printed was a future-tense lie.
 
-The Express viewer ran inside the MCP server process. The MCP server's lifecycle was bound to the Claude session. Close the chat — the harness shut down the MCP server — the Express viewer died with it — every URL pointing at port 3001 went 404.
+The viewer ran inside the MCP server process. The MCP server's lifecycle was bound to the Claude session. Close the chat — the harness shut down the MCP server — the viewer died with it — every URL pointing at port 3001 stopped answering. Not even a 404: nothing was listening.
 
 A user came back the next morning, clicked the bookmark from yesterday's design session, and got `ECONNREFUSED`.
 
@@ -38,9 +38,9 @@ This is the worst possible discovery channel for a bug. There's no telemetry, no
 
 ## What Fixed It
 
-Two changes, ~70 lines of new code total, shipped together as commit `3e4201f`.
+Two changes, shipped together as commit `3e4201f` (219 added lines across six files; the standalone viewer itself is a 70-line file).
 
-1. **Split the viewer into a standalone process.** `viewer-standalone.ts` — a separate `bin` entry that runs the Express server *outside* the MCP server's lifecycle. The MCP server starts and stops; the viewer keeps running. The user can leave the viewer process up across sessions.
+1. **Split the viewer into a standalone process.** `viewer-standalone.ts` — a separate `bin` entry (`canvas-viewer`, or `npm run viewer`) that runs the same viewer server *outside* the MCP server's lifecycle. The MCP server starts and stops; the viewer keeps running. The user leaves the viewer up in a terminal tab across sessions, and the MCP server detects a running standalone viewer and reuses it instead of starting its own.
 2. **Persist canvases to disk.** Add `~/.canvas-mcp/canvases/` as a JSON-on-disk store. The MCP server writes canvases there as it produces them. The standalone viewer reads from there to serve URLs. Any session can write; any viewer instance can read; URLs survive the session that produced them.
 
 The fix is structural, not behavioral. The bug wasn't "the viewer crashed sometimes" — it was "the viewer's lifecycle was wrong." Splitting the lifecycle was the only honest fix; everything else would have been a workaround pretending the in-process version could be made durable.

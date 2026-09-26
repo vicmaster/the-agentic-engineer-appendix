@@ -2,81 +2,77 @@
 
 ## Date / Version Context
 
-- **Date:** Latent throughout canvas-mcp's lifetime. The parser shipped with the first version of the `import_design_md` tool (Phase 1, 2026-03). The bug was caught by eyeballing a screenshot during dogfooding sometime in Phase 2 or 3. Still pending as of the 2026-05-09 self-interview — captured in `VISION.md` as `[ ] DESIGN.md parser: filter out non-color values (e.g. full box-shadow strings) from colors map`.
-- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. TypeScript monorepo, vanilla canvas rendering. The `import_design_md` MCP tool ingests a `DESIGN.md` file from a community-curated design repository (a separate GitHub project that aggregates design specs from 55+ contributors). The parser converts the Markdown spec into the `Canvas` type the renderer consumes.
-- **Surface for this story:** the `DESIGN.md → Canvas` parse step. Specifically, the `colors` section's value-shape: the parser accepts `Record<string, string>` (any string-to-string map under the `colors` key) without semantic validation of whether the values are actually colors.
+- **Date:** Latent from the day the parser shipped. `import_design_md` arrived in Phase 4 (`88b5471`, 2026-04-01), and the same commit added the open todo to `VISION.md`: `[ ] DESIGN.md parser: filter out non-color values (e.g. full box-shadow strings) from colors map`. So the problem was spotted by eyeballing a screenshot while the import was being built, and the feature shipped anyway. Still pending at the 2026-05-09 self-interview; fixed 2026-05-14 in `fe95515`.
+- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. A single-package Node/TypeScript project; scene graphs render to HTML/CSS in headless Chromium. The `import_design_md` MCP tool ingests a `DESIGN.md` in the Google Stitch / awesome-design-md format (the awesome-design-md collection covers roughly 55 design systems, such as Stripe, Notion, Vercel and Linear). The parser converts the Markdown spec into a preset: design variables (colors, typography, spacing, radius) that `apply_preset` loads into a canvas.
+- **Surface for this story:** the `DESIGN.md → preset` parse step. Specifically, the color palette's values: the parser pulls ``**Label** (`value`)`` pairs out of the `Color Palette & Roles` section into a `Record<string, string>` and keeps any value that starts with `#`, `rgb` or `hsl`. A prefix check, not a check that the whole value is a color.
 - **Glossary, used in this writeup:** *Import boundary* = the point where external input enters the system's typed world (here: the `DESIGN.md` parser turning text into typed structures). *Format-level validation* = a check on the input's structural shape (is this a string? is this a map?). *Semantic-level validation* = a check on the input's meaning (is this string actually a CSS color?). *Community input* = data produced by multiple authors who don't share a single mental model of the format's intent.
 
 ## What Was Being Attempted
 
 Ingest a community-curated `DESIGN.md` into canvas-mcp's renderer.
 
-The motivation was scale. canvas-mcp's first version had 15 layouts and 7 templates, hand-authored. The next version was supposed to scale by accepting design specs from a community repo — the AI-friendly-design-systems project, with 55+ contributors each maintaining a `DESIGN.md` for their own design system (Material, iOS, Bootstrap, in-house brand systems, etc.). The `import_design_md` tool ingests one of those files and produces a `Canvas` the renderer can use.
+The motivation was scale. canvas-mcp shipped with four hand-authored style presets (dark, light, material, minimal). Phase 4 was supposed to scale past that by accepting design specs people already maintain: the awesome-design-md collection, roughly 55 `DESIGN.md` files describing real products' design systems (Stripe, Notion, Vercel, Linear, and so on). The `import_design_md` tool ingests one of those files and registers it as a preset any canvas can apply.
 
-The format was reasonable. `DESIGN.md` has named sections — `## Colors`, `## Typography`, `## Spacing`, `## Components` — each containing a structured block of key-value pairs. The Colors section follows a convention like:
+The format was reasonable. `DESIGN.md` has named sections — `Visual Theme & Atmosphere`, `Color Palette & Roles`, `Typography Rules`, `Layout Principles` and so on. The color palette follows a convention like (values illustrative):
 
 ```markdown
-## Colors
+## Color Palette & Roles
 
-- primary: #4a90e2
-- secondary: #50e3c2
-- text-primary: #2d3748
-- text-secondary: #718096
-- error: #e53e3e
+- **Primary** (`#4a90e2`)
+- **Text Primary** (`#2d3748`)
+- **Error** (`#e53e3e`)
 ```
 
-Straightforward. Hex codes, named keys. The parser converts this to `{ "primary": "#4a90e2", "secondary": "#50e3c2", ... }` and the renderer uses it for fill colors, stroke colors, text colors.
+Straightforward. Bold labels, hex codes in backticks. The parser converts this to `{ "primary": "#4a90e2", "text-primary": "#2d3748", ... }`, and canvases reference the values as `$primary`, `$text-primary` in fills, strokes and text colors.
 
-The implementation matched the format. The parser walks the section, splits each line on `: `, and produces a `Record<string, string>` for `colors`. No further validation. The format said *string-to-string map*; the parser produced a *string-to-string map*. The contract held.
+The implementation matched the format. The parser walks the section with a regex for ``**Label** (`value`)`` pairs, slugifies the label, and keeps the value if it starts with `#`, `rgb` or `hsl`. The comment above that check read *Only keep actual color values*. That prefix test was the whole validation.
 
 ## What Went Wrong
 
-Some `DESIGN.md` authors put box-shadows in the colors map.
+Some `DESIGN.md` authors put more than colors in the palette.
 
-A real `DESIGN.md` had entries like:
+The fix commit later listed what had been leaking through: box-shadow strings, gradients, comma-separated color lists, and values with trailing keywords such as `rgba(...) inset`. An entry of this shape (illustrative) sails through a prefix check:
 
 ```markdown
-## Colors
+## Color Palette & Roles
 
-- primary: #4a90e2
-- text-primary: #2d3748
-- button-shadow: 0 4px 12px rgba(0,0,0,0.15)
-- card-elevation: 0 2px 4px rgba(0,0,0,0.08)
+- **Primary** (`#4a90e2`)
+- **Button Shadow** (`rgba(0,0,0,0.15) 0px 4px 12px`)
 ```
 
-`button-shadow` and `card-elevation` are CSS box-shadow strings — multi-value shorthand declarations with offsets, blur radius, and color. They're not colors. They're *shadows* that happen to live in the "colors" section because the author's mental model was *colors is the section for visual-style values*, not *colors is the section for color values*.
+`button-shadow` is a CSS box-shadow string — a multi-value shorthand declaration with color, offsets and blur radius. It's not a color. It starts with `rgba`, so the prefix check waved it through. It's a *shadow* that happens to live in the colors section because the author's mental model was *colors is the section for visual-style values*, not *colors is the section for color values*.
 
-The parser accepted both. The format-level check (*string-to-string map*) passed. The renderer received `colors["button-shadow"] = "0 4px 12px rgba(0,0,0,0.15)"`. The renderer tried to use that string as a fill or stroke color. CSS parsers in the renderer accepted the string at the property-set level (the rendering library doesn't reject invalid color strings; it falls back to a default or renders nothing). The visual output was a silently broken node — a button with no shadow because the value was treated as a color and failed to render, or a card with a wrong fill because the renderer fell back to black when the color string didn't parse.
+The parser accepted it. The prefix check passed. The preset now carried `colors["button-shadow"] = "rgba(0,0,0,0.15) 0px 4px 12px"`, and any node that referenced `$button-shadow` as a fill, stroke or text color got that string written into its CSS. The renderer doesn't validate colors; it emits declarations like `background-color: <value>` and lets Chromium sort it out. Chromium discards a declaration it can't parse, without an error. The visual output was a silently broken node — a missing fill or stroke, and no warning anywhere.
 
 The shape of the bug:
 
-- **Format-level validation passed** because the input shape matched (string-to-string map).
-- **Semantic-level validation was absent** because no check asked *is this string actually a CSS color?*
-- **The renderer didn't fail loudly** because rendering libraries are permissive — they'd rather show wrong output than crash.
-- **The output was visually broken** but not structurally errored, so unit tests couldn't catch it (every test passed; the canvas still rendered).
+- **Format-level validation passed** because the input shape matched (a string that starts like a color).
+- **Semantic-level validation was a prefix check** — it asked *does this start like a color?*, not *is this entire string a CSS color?*
+- **The renderer didn't fail loudly** because browsers are permissive — an invalid CSS declaration is dropped, not reported.
+- **The output was visually broken** but not structurally errored, and there was no parser test at all until the fix; the canvas still rendered.
 - **The discovery channel was a human looking at a screenshot** and noticing the button looked wrong, then tracing back to the imported colors map.
 
-The implicit trust the bug exposes: the parser was trusting 55+ `DESIGN.md` authors to share a single mental model of what `## Colors` means. They didn't. Some authors used "colors" for any visual-style key; others used it strictly for color values; a few used it as a catch-all for any string they didn't have a section for. The format's *intent* was clear-to-the-format-designer; the format's *interpretation by community authors* was not consistent.
+The implicit trust the bug exposes: the parser was trusting the authors of ~55 `DESIGN.md` files to share a single mental model of what `## Colors` means. They didn't. Some authors used "colors" for any visual-style key; others used it strictly for color values; a few used it as a catch-all for any string they didn't have a section for. The format's *intent* was clear-to-the-format-designer; the format's *interpretation by community authors* was not consistent.
 
 ## How It Was Discovered
 
 By eyeballing a screenshot.
 
-The operator imported a `DESIGN.md`, rendered a canvas with it, and noticed the visual output didn't match what the design system was supposed to look like. The screenshot looked off — a button with no shadow, a card with a wrong fill. The operator opened the imported `Canvas` object, looked at the `colors` map, and saw the box-shadow strings sitting alongside the hex codes. The cause was immediate once the operator looked.
+The operator imported a `DESIGN.md`, rendered a canvas with it, and noticed the visual output didn't match what the design system was supposed to look like. The screenshot looked off — nodes missing the colors they should have had. The operator opened the imported preset, looked at the `colors` map, and saw non-color strings sitting alongside the hex codes. The cause was immediate once the operator looked.
 
-The discovery channel is worth pausing on. Standard validation tooling caught nothing. The schema validation passed because the schema was *Record<string, string>*. The renderer didn't error because rendering libraries are permissive. CI tests passed because the synthetic test fixtures used `{ "primary": "#4a90e2", ... }` — no box-shadow strings, because the developer writing the tests had the *correct* mental model of what belongs in `colors`. Real-world authors had the *wrong* mental model; the tests couldn't see this because the tests came from the developer's mental model too.
+The discovery channel is worth pausing on. Nothing automated caught it. The type was *Record<string, string>* and the only runtime check was the prefix test. The renderer didn't error because the browser drops invalid CSS silently. There was no CI and no parser test at all; `test-design-md.ts` only arrived with the fix. The check itself encoded the developer's mental model (*a color starts with `#`, `rgb` or `hsl`*). Real-world authors didn't write to that model, and a check written from the developer's model couldn't see the difference.
 
 This is the same shape as the channel-ID regex and the IntentParser stories: **synthetic test data and the synthetic check both come from the developer's mental model, so the tests can't catch the bug when real-world input doesn't match the model.** The fix-shape varies (LLM-as-fallback, resolve-at-source, semantic-validation-at-import); the bug-shape is identical.
 
 ## What Fixed It
 
-Nothing yet, and that's worth being honest about. The fix is sitting in `VISION.md`:
+At the time of the self-interview, nothing; the fix was still a `VISION.md` todo:
 
 ```markdown
 - [ ] DESIGN.md parser: filter out non-color values (e.g. full box-shadow strings) from colors map
 ```
 
-The pragmatic fix would add a CSS-color regex at the import boundary: accept values that match `^#[0-9a-fA-F]{3,8}$|^rgb\(...\)$|^rgba\(...\)$|^hsl\(...\)$|^hsla\(...\)$|^[a-z]+$` (named colors), reject everything else. The rejected entries get a warning in the import log; the renderer never sees them. This is straightforward — half a day of work plus tests.
+It landed five days later, on 2026-05-14, in `fe95515`. The prefix check was replaced with `isColorValue()`, which accepts a value only if the *whole* string is a single hex color (`#RGB`, `#RGBA`, `#RRGGBB` or `#RRGGBBAA`) or a single `rgb()`/`rgba()`/`hsl()`/`hsla()` call with nothing after it. Everything else is dropped from the colors map, and a new `test-design-md.ts` covers the rejects. A 19-line parser change plus 54 lines of tests: the pragmatic fix, at the import boundary, so the renderer never sees the rest. One gap against the ideal: rejected entries are dropped silently rather than reported in an import log.
 
 The structural fix is broader: **every section of `DESIGN.md` deserves semantic validation at the import boundary, not just colors.** Spacing values that should be CSS lengths but aren't. Typography that should be valid font shortcuts but isn't. Component definitions that reference shapes the renderer doesn't know. Each section has the same shape — format-level validation insufficient, semantic-level validation needed.
 
@@ -86,7 +82,7 @@ What didn't get attempted: trying to make the renderer recover from bad colors. 
 
 ## The Durable Lesson
 
-**Validate at the import boundary, not in the renderer.** A parser that accepts "the format" from a community-curated repo is implicitly trusting 55+ authors to agree on what a value means. They don't.
+**Validate at the import boundary, not in the renderer.** A parser that accepts "the format" from a community-curated repo is implicitly trusting dozens of authors to agree on what a value means. They don't.
 
 The deeper observation: **format-level validation catches type drift; semantic-level validation catches meaning drift. Community input always brings both.** The parser's job in a community-input system isn't *accept anything that matches the format*; it's *accept anything that the format intends*. The two are different, and the gap between them is where every community-input parser eventually breaks.
 
@@ -125,7 +121,7 @@ The signal: *if a community author put something semantically wrong in this sect
 
 ## What This Story Is *Not* Evidence For
 
-- **Not evidence that community input is bad.** Community-curated design systems are exactly the reason canvas-mcp can scale beyond hand-authored templates. The bug isn't accepting community input; it's accepting community input *without semantic validation at the boundary*.
+- **Not evidence that community input is bad.** Community-curated design systems are exactly the reason canvas-mcp can scale beyond its four hand-authored presets. The bug isn't accepting community input; it's accepting community input *without semantic validation at the boundary*.
 - **Not evidence that the DESIGN.md format is flawed.** The format is fine for its intent. The bug is at the parser, not the format. Other parsers could handle the same format better.
 - **Not evidence that the authors who put box-shadows in colors are wrong.** Their mental model — *colors is the section for visual-style values* — is internally consistent. The format didn't say it wasn't. The fix isn't to fight the authors' interpretation; it's for the parser to filter at the boundary so the renderer doesn't see semantically-mismatched values.
 - **Not evidence that JSON Schema or other strict-schema tools would have caught this.** They would have caught it *if the schema declared `colors: Record<string, CSSColor>` instead of `Record<string, string>`*. The bug is the schema not encoding semantic types, not the absence of schema tooling. Strict tools with weak schemas have the same failure mode.

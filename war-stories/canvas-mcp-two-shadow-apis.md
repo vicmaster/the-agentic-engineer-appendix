@@ -3,7 +3,7 @@
 ## Date / Version Context
 
 - **Date:** 2026-03-21. Commits `fc8cdb5` (22:28) and `f8485bc` (22:50) — 22 minutes apart on the same evening. The contradiction wasn't visible until ~1 week later.
-- **Project:** canvas-mcp v0.1.0 — at the time, ~3,200 LOC of TypeScript on its way to ~6,500 LOC by Phase 4.
+- **Project:** canvas-mcp v0.1.0 — a single-package Node/TypeScript project; about 1,650 lines of `src/` TypeScript after Phase 3 (about 2,250 counting test scripts), about 2,400 by Phase 4.
 - **Build context:** Two phases shipped that evening. Phase 2 = components + icons + presets + exports. Phase 3 = gradients + shadows + responsive + diff. ~1,500 LOC of new code across eight subtasks, fanned out across parallel subagents and merged into two commits 22 minutes apart.
 - **Glossary, used in this writeup:** *Fan-out* = splitting one task into N parallel subtasks executed by separate subagents. *Merge commit* = the act of collapsing those subtasks into a single coherent change in the codebase. *Structured API* = an API that takes typed objects (`shadows: [{x: 4, y: 4, blur: 12, color: "#000", opacity: 0.15}]`). *String API* = an API that takes a single formatted string (`shadow: "0 4px 12px rgba(0,0,0,0.15)"`).
 
@@ -11,10 +11,10 @@
 
 Ship Phase 2 and Phase 3 in one evening using subagent fan-out. The eight subtasks were assumed to be mostly disjoint:
 
-- Phase 2: components (`components.ts`), icons (`icons.ts`), presets (`presets.ts`), exports (`screenshot.ts`).
+- Phase 2: components (in `renderer.ts`, `operations.ts` and `types.ts`; there is no `components.ts`), icons (`icons.ts`), presets (`presets.ts`), exports (`screenshot.ts`).
 - Phase 3: gradients, shadows, responsive, diff.
 
-The disjointness was real for six of the eight subtasks. Components, icons, presets, and exports each owned distinct files. Gradients and responsive each touched the renderer in surgically different spots. The fan-out felt safe.
+The disjointness was real for six of the eight subtasks. Icons, presets, and exports each owned distinct files. Gradients and responsive each touched the renderer in surgically different spots. The fan-out felt safe.
 
 The merge happened as two commits 22 minutes apart, with no integration step in between. Tests for each phase passed. The build was green. Both commits were authored, both reviewed (informally), both pushed.
 
@@ -75,10 +75,10 @@ The lesson is *not* "don't parallelize." It's "parallelize only when the subtask
 Fan-out works when:
 
 - Each subagent can be assigned a named file or module before they start, and the assignment is checked.
-- The integration seams are pre-defined types or interfaces that the subagents agree on up front. (canvas-mcp's `_shared.ts` and `RenderContext` did this for layout work — and that work merged cleanly.)
+- The integration seams are pre-defined types or interfaces that the subagents agree on up front.
 - Every parallel branch produces a throwaway test harness that confirms its slice in isolation, so the integration test isn't the first time the parts meet.
 
-The right examples in the same project: fifteen layouts shipped in parallel, each in its own file with a shared `LayoutRenderer` interface. Twelve audit rules, same shape, same parallelism, no conflicts. Nine Pillow operations, same. The schema-shaped, file-disjoint subtasks survived fan-out cleanly.
+The right examples in the same evening: icons landed in a new `icons.ts`, presets in a new `presets.ts`, and the capture features in `screenshot.ts`. Those are the file-disjoint pieces.
 
 The wrong example was two subtasks that *both decided to add a shadow API to the renderer* because each thought it was the natural place to put one. The fan-out was right for the rest of the work and wrong for the renderer.
 

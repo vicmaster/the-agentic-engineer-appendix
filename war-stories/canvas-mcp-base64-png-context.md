@@ -2,9 +2,9 @@
 
 ## Date / Version Context
 
-- **Date:** Slow-burn from canvas-mcp's first weeks (Phase 1 in 2026-03) through Phase 3 (2026-03-21). The fix landed in commit `a3cf691` (2026-03-25): the standalone viewer + `~/.canvas-mcp/canvases/` JSON persistence + tool responses that return URLs instead of bytes.
-- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. TypeScript monorepo, pnpm workspaces, Zod schemas, vanilla canvas rendering. 13 MCP tools as of v0.1; `screenshot()` is one of two that returns rendered output.
-- **Surface for this story:** the `screenshot()` MCP tool's response shape. Before the fix: a base64-encoded PNG embedded as a content block in the tool response. After the fix: a small JSON object with a `url` field pointing at the standalone viewer.
+- **Date:** Slow-burn from canvas-mcp's first weeks (Phase 1 in 2026-03) through Phase 3 (2026-03-21). The fix landed in commit `a3cf691` (2026-03-25): a built-in browser viewer, a new `viewer_url` tool, and viewer links added to the `canvas_create` and `batch_design` responses. Disk persistence (`~/.canvas-mcp/canvases/`) and the standalone viewer process came later, in `3e4201f` (2026-04-11).
+- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. A single-package Node/TypeScript npm project (Zod for tool parameters) that renders a scene graph to HTML/CSS and screenshots it in headless Chromium via Puppeteer. 13 MCP tools when Phase 3 shipped, 16 by v0.1 (2026-04-11); `screenshot()` is one of three that return rendered images (with `screenshot_responsive` and `canvas_diff`).
+- **Surface for this story:** the response shapes of the tools the agent calls while iterating. Before the fix: the only way to see a design was `screenshot()`, which returns a base64-encoded PNG as an image content block. After the fix: `canvas_create` and `batch_design` responses carry a short viewer link (`View live: http://localhost:3001/canvas/<id>`), and `viewer_url` returns a small JSON object of links. `screenshot()` still returns the PNG, for turns where the agent itself needs to look.
 - **Glossary, used in this writeup:** *Tool-output that compounds* = an MCP tool whose response sits in the agent's conversation history for the rest of the session, getting re-billed at input rates on every subsequent turn. *Compounding cost* = the per-turn cost of conversation history that grows with each accumulated tool response, especially when the responses are large (images, full documents, dense JSON). *Context degradation* = the slow erosion of model attention and budget as compounding tool outputs accumulate.
 
 ## What Was Being Attempted
@@ -13,7 +13,7 @@ Show the agent what it just rendered.
 
 The `screenshot()` tool's job is straightforward: take a `Canvas` definition (the agent's most recent design output), render it to PNG, return the image so the agent can iterate. The agent looks at what it produced, decides what to change, calls back into the design tool. Standard iterate-with-visual-feedback shape — the kind of loop that exists in every AI-assisted design workflow.
 
-The first version of the tool returned the PNG directly. A base64-encoded image, embedded as a content block in the tool's response. MCP supports image content blocks natively; the agent receives the PNG, the model sees it as a vision input, the iteration loop closes. The implementation was twenty lines. The contract was clean. The first three or four turns worked beautifully.
+The first version of the tool returned the PNG directly. A base64-encoded image, embedded as a content block in the tool's response. MCP supports image content blocks natively; the agent receives the PNG, the model sees it as a vision input, the iteration loop closes. The implementation was about thirty lines. The contract was clean. The first three or four turns worked beautifully.
 
 By turn ten, long sessions started slowing down for reasons the operator couldn't immediately name.
 
@@ -21,17 +21,17 @@ By turn ten, long sessions started slowing down for reasons the operator couldn'
 
 The PNGs from earlier turns were still in the conversation.
 
-A base64-encoded PNG of a typical canvas is somewhere between 30,000 and 80,000 tokens of input. After three iterations on a mockup, three of those PNGs sat in conversation history. After ten iterations, ten PNGs. The agent had looked at each one once on the turn it was rendered, decided to iterate, and moved on. The PNGs themselves were *not useful* to subsequent turns — the agent didn't re-read them, didn't compare them, didn't reference them. They were inert.
+Each screenshot is a full capture of the canvas (1440×900 by default, at 2× device scale), and it rides along as image input on every later turn. (The self-interview didn't record a per-image token count, and the exact cost depends on the client and the image size, so none is quoted here.) After three iterations on a mockup, three of those PNGs sat in conversation history. After ten iterations, ten PNGs. The agent had looked at each one once on the turn it was rendered, decided to iterate, and moved on. The PNGs themselves were *not useful* to subsequent turns — the agent didn't re-read them, didn't compare them, didn't reference them. They were inert.
 
 But the model has no way to *forget* a previous tool response. Every subsequent turn re-submits the entire conversation history. Every subsequent turn paid input-token cost for all the previously-rendered PNGs the agent didn't need to see again. By turn ten, a single Sonnet round-trip was paying for ten previously-rendered canvases on its way to producing the eleventh.
 
 The cost shape compounded:
 
-- **Money.** Input tokens are billed on every turn. Ten PNGs at 50K tokens each = 500K tokens of input on every turn, billed at the input rate. Multiply by the per-call rate, then by the number of turns left in the session. The math gets ugly fast.
+- **Money.** Input tokens are billed on every turn. Ten iterations means ten images re-sent as input on every subsequent turn, billed at the input rate. Multiply by the number of turns left in the session. The math gets ugly fast.
 - **Latency.** Larger inputs take longer to process. Long-running sessions noticeably slowed down across turns. The slowness tracked the prompt size, not the model.
 - **Attention.** The most insidious cost. The model has finite attention per turn. Stuff the context with previously-rendered designs and the model spends attention on those tokens *at the expense of* the current task's tokens. Responses started drifting toward old designs — referencing colors from two turns ago, picking up patterns from a previous iteration the agent had explicitly moved past. Not because the model was confused; because the older designs were closer to the front of the input and the attention budget had to allocate somewhere.
 
-The discovery channel: not a single incident. A slow accumulation of *long sessions are getting worse over time*. The operator noticed it during Phase 3, when working sessions on the renderer were lasting hours and the model's outputs were degrading in ways the operator could feel before they could name. The forensic moment was looking at the conversation buffer, scrolling up, and seeing seven previously-rendered PNGs sitting in the history that the agent had no business re-paying for.
+The discovery channel: not a single incident. A slow accumulation of *long sessions are getting worse over time*. The operator noticed it during Phase 3, when working sessions on the renderer were lasting hours and the model's outputs were degrading in ways the operator could feel before they could name. The forensic moment was looking at the conversation buffer, scrolling up, and seeing a stack of previously-rendered PNGs sitting in the history that the agent had no business re-paying for.
 
 The bug isn't *base64 is wasteful encoding*. The bug is *the tool's output shape was designed for a single-call interaction, and the actual workload is a multi-turn iteration loop*. A response shape that works for the typical call doesn't work for the typical *session*.
 
@@ -51,13 +51,15 @@ The viewer.
 
 Commit `a3cf691` (2026-03-25) made three changes that converged on a single architectural shift:
 
-1. **`viewer-standalone.ts`** — a small local Express server, started by the MCP server but lifecycle-independent (split into its own process at a later commit to fix a related lifecycle bug; see the companion story `canvas-mcp-viewer-lifecycle.md`). The viewer serves rendered canvases over HTTP from a persistent store.
-2. **`~/.canvas-mcp/canvases/` JSON persistence** — every rendered canvas writes to a file. The agent's `screenshot()` call now persists rather than returning bytes.
-3. **The new `screenshot()` response shape** — a JSON object with a single `url` field pointing at the viewer (e.g. `{ "url": "http://localhost:3001/canvas/abc" }`). A few tens of tokens, not a few tens of thousands.
+1. **A built-in viewer (`viewer.ts`)** — a small local HTTP server (Node's `http` module, no framework) started inside the MCP server process. It serves each canvas at its own URL, plus a gallery page, and polls every two seconds so the page follows the agent's edits. It moved into its own process, with disk persistence under `~/.canvas-mcp/canvases/`, in a later commit (`3e4201f`, 2026-04-11) to fix a related lifecycle bug; see the companion story `canvas-mcp-viewer-lifecycle.md`.
+2. **A `viewer_url` tool** — returns the viewer's address and a link for every canvas as a small JSON object.
+3. **Links in the working tools' responses** — `canvas_create` now returns a `viewerUrl` field, and `batch_design` appends `View live: http://localhost:3001/canvas/<id>`. A few tens of tokens, not an image. The `canvas_create` description tells the agent to always share that link with the user.
 
-The conversation buffer never saw a PNG again. The human watching the agent work opens the URL in their browser and sees the canvas live. The agent gets a tiny URL string back. The previously-rendered designs don't haunt the next ten turns.
+`screenshot()` itself was not changed. It still returns a PNG, in canvas-mcp and in its successor framesmith. What changed is that *seeing* the design no longer required one.
 
-A second-order consequence worth naming: the agent's iteration quality *improved*. With the attention budget no longer spent on stale PNGs, the model's output stayed focused on the current task. Long sessions that had been degrading now held quality across turns. The fix wasn't only a cost fix; it was a *correctness* fix for the workflow shape this tool supports.
+The human watching the agent work opens the URL in their browser and sees the canvas live. The agent gets a tiny URL string back from the tools it was calling anyway, and only needs `screenshot()` on the turns where it has to look for itself. Viewing stops costing conversation budget.
+
+A second-order consequence worth naming, though nobody measured it at the time: the agent's iteration quality should *improve*. With less of the attention budget spent on stale PNGs, the model's output can stay focused on the current task. That's the self-interview's account, not a benchmark. If it holds, the fix isn't only a cost fix; it's a *correctness* fix for the workflow shape this tool supports.
 
 What didn't get attempted: trying to make the agent *forget* older PNGs in some structured way (truncating the history, summarizing the previous turns, swapping older tool responses with placeholders). All of those mechanisms add complexity at the wrong layer — they're cleanups after the fact. The structural fix is at the tool's *response shape*, not in the conversation management.
 

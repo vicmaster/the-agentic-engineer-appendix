@@ -4,18 +4,18 @@
 
 - **Date:** The mental-model flip crystallized at the viewer commit `a3cf691` (2026-03-25). The base64-PNG design predates it (the original `screenshot()` return shape was bytes-in-response from Phase 1, 2026-03 onward); the standalone viewer is what made the alternative concrete.
 - **Project:** canvas-mcp — open-source MCP server for AI design canvas. Renders structured design specs into visual canvas artifacts. The operator's interactive loop is *agent calls tool, tool produces a canvas, human reviews the canvas, agent iterates based on the operator's feedback*. The human review step is load-bearing — the operator is in the loop, not downstream of it.
-- **Surface for this story:** the `screenshot()` MCP tool's response shape. Pre-`a3cf691`: tool returns base64 PNG bytes in the response body. Post-`a3cf691`: tool persists the canvas to a JSON-backed viewer state, returns a URL like `http://localhost:3001/canvas/<id>`, the operator opens the URL in a browser and sees the actual canvas.
+- **Surface for this story:** the response shapes of the tools the agent calls while designing. Pre-`a3cf691`: the only visual output was `screenshot()`'s base64 PNG. Post-`a3cf691`: `canvas_create` and `batch_design` also return a URL like `http://localhost:3001/canvas/<id>` into a live viewer (served from the MCP server's in-memory canvases; disk persistence came with `3e4201f` on 2026-04-11), and the operator opens it in a browser and sees the actual canvas.
 - **Glossary, used in this writeup:** *Agent-as-customer* = the mental model where the only stakeholder of an MCP tool's output is the calling agent. *Human-watching-the-session* = the operator running the agentic flow, observing the conversation as it unfolds, and reviewing intermediate artifacts. *Agentic ≠ agent-only* = the principle that agentic systems usually have at least two customers (the agent and the operator), and tool design should serve both.
 
 ## What Was Being Attempted
 
 Make `screenshot()` return enough information for the agent to reason about the canvas it just rendered.
 
-The product framing was correct in the obvious sense. The agent designs canvases by calling MCP tools (`canvas_create`, `set_variables`, `read_nodes`, `apply_preset`, etc.), and the agent needs *some* signal about what the canvas currently looks like to decide its next move. Returning the rendered PNG as base64 bytes was the obvious shape: the agent gets a literal image of the canvas, can describe it, can decide what to change.
+The product framing was correct in the obvious sense. The agent designs canvases by calling MCP tools (`canvas_create`, `batch_design`, `set_variables`, `apply_preset`, etc.), and the agent needs *some* signal about what the canvas currently looks like to decide its next move. Returning the rendered PNG as base64 bytes was the obvious shape: the agent gets a literal image of the canvas, can describe it, can decide what to change.
 
 In a vacuum, the design works. The agent calls `screenshot()`, gets back a PNG, reasons about the visual, calls the next tool. The MCP protocol supports image-typed responses; Claude's vision is good at reading rendered designs; the loop closes correctly from the agent's perspective.
 
-The framing's blind spot was *who else is in the loop*. The operator running canvas-mcp isn't watching the conversation from outside — the operator is *actively reviewing* what the agent produces. The operator's review surface should be *the rendered canvas itself*, not *the agent's verbal description of the canvas*, and not *a base64 string the operator can't actually see without copying it out and pasting it into a decoder*.
+The framing's blind spot was *who else is in the loop*. The operator running canvas-mcp isn't watching the conversation from outside — the operator is *actively reviewing* what the agent produces. The operator's review surface should be *the rendered canvas itself*, not *the agent's verbal description of the canvas*, and not *an image that lives inside a tool result*, which (depending on the client) the operator may not see rendered at all, and can't open in a browser, bookmark, or keep up on a second screen.
 
 The agent-as-only-customer framing missed this. The tool worked for the agent. The tool worked terribly for the human watching the agent.
 
@@ -28,17 +28,17 @@ The operator's actual session loop, with the pre-`a3cf691` `screenshot()`:
 1. Operator asks the agent to make a canvas.
 2. Agent calls `canvas_create`, sets variables, etc.
 3. Agent calls `screenshot()`.
-4. Agent's response includes a long block of base64-encoded PNG bytes plus the agent's narrative description.
+4. The tool result is an image the model reads. What the operator sees of it depends on the client; it isn't a page they can open, resize, or come back to. The agent adds its narrative description.
 5. Operator wants to *see* the canvas to decide what to ask next.
-6. Operator either (a) takes the agent's description at face value, (b) copies the base64 string out and decodes it in a separate tool, or (c) ignores the screenshot entirely and asks the agent to *describe* the canvas in more detail.
+6. Operator either (a) takes the agent's description at face value, (b) asks the agent to `export` the canvas to a PNG file and opens it separately, or (c) ignores the screenshot entirely and asks the agent to *describe* the canvas in more detail.
 
 Each of (a), (b), (c) is friction the operator pays for the *tool's design assumption that only the agent is the customer*. None of the three is acceptable for a real review loop:
 
 - **(a) Take the agent at face value.** Agents are reasonable narrators of what they generate but not reliable enough that *"I made a 3-column dashboard"* is interchangeable with *seeing* the dashboard. Visual review is *visual*; verbal substitutes aren't.
-- **(b) Decode the base64.** Operator pulls the base64 string out, runs it through a decoder, opens the resulting PNG. Three context switches per screenshot. The operator's review velocity drops to whatever the slowest decode step is.
+- **(b) Export and open a file.** The agent calls `export` to write a PNG to disk; the operator finds the file and opens it. An extra tool call and a context switch per review. The operator's review velocity drops to whatever the slowest step is.
 - **(c) Skip the screenshot.** The screenshot becomes purely decorative — the operator works from the agent's text descriptions and reviews the final output once. Loses the per-step review cadence the agentic loop should support.
 
-The structural shape: **the tool's design only served the agent's loop. The operator's loop was an afterthought.** The viewer commit treats the operator's loop as load-bearing — the tool returns a URL the operator can click and see the canvas. The agent loses the base64-PNG context-economics tax; the operator gains a real review surface. Same fix, two distinct lessons.
+The structural shape: **the tool's design only served the agent's loop. The operator's loop was an afterthought.** The viewer commit treats the operator's loop as load-bearing — the tools return a URL the operator can click and see the canvas. The agent no longer needs a PNG in the conversation just so someone can see the design; the operator gains a real review surface. Same fix, two distinct lessons.
 
 ## How It Was Discovered
 
@@ -52,19 +52,19 @@ This generalizes: **if you only let the agent test your agentic tools, you'll sh
 
 ## What Fixed It
 
-The viewer commit `a3cf691`, 2026-03-25. Three layers of fix:
+The viewer commit `a3cf691`, 2026-03-25, and its follow-up `3e4201f`, 2026-04-11. Three layers of fix:
 
-**Persist canvas state outside the conversation.** Each canvas gets a UUID-keyed JSON record in a `.canvas/<id>.json` file. The state outlives any single tool call.
+**Run a viewer.** A small HTTP server (the *viewer*) serves `http://localhost:3001/canvas/<id>` for each canvas, rendering it with the same HTML/CSS renderer the screenshots use and polling every two seconds so the page follows the agent's edits. In `a3cf691` it ran inside the MCP server process; `3e4201f` split it into a standalone process.
 
-**Run a standalone viewer process.** A small HTTP server (the *viewer*) serves `http://localhost:3001/canvas/<id>` for each canvas, rendering it as HTML/CSS/JS in the browser using the same renderer the agent operates against.
+**Persist canvas state outside the conversation.** In `3e4201f`, each canvas got a JSON file at `~/.canvas-mcp/canvases/<id>.json` (short random IDs, not UUIDs), so the state outlives the MCP server process as well as any single tool call.
 
-**Change `screenshot()` to return a URL.** The MCP tool's response now includes `viewer_url: http://localhost:3001/canvas/<id>` instead of (or in addition to) the base64 bytes. The agent's response shrinks dramatically (URL is ~50 bytes, base64 PNG was 30,000-80,000 input tokens). The operator gets a clickable link.
+**Put the URL in the responses.** `canvas_create` returns a `viewerUrl`, `batch_design` appends a `View live:` link, and a new `viewer_url` tool lists a link for every canvas. A URL is a few dozen bytes. `screenshot()` still returns the PNG for the agent's own looking; the operator gets a clickable link.
 
 The fix is asymmetric in cost. The persistence layer + viewer process is real infrastructure work (a few hundred lines, plus its own lifecycle concerns — see the companion story `canvas-mcp-viewer-lifecycle.md` for the *tool that lies about state it doesn't own* lesson that fell out of the *next* fix in this arc). The agent-loop change is one return-shape adjustment. Most of the cost was acknowledging the operator's loop as load-bearing, then building the surface to serve it.
 
 What's load-bearing isn't the specific URL-not-bytes choice — that's the context-economics lesson (see the companion story `canvas-mcp-base64-png-context.md`). What's load-bearing here is the *framing shift*: from *the agent is the customer* to *the agent and the operator are both customers, and the tool design has to serve both.*
 
-What's owed but not yet shipped: a *canvas-mcp design principle doc* that names the two-customers framing explicitly so future tools (a hypothetical `canvas_diff()`, `canvas_compare()`, `canvas_history()`) are designed with both stakeholders in mind from the start. Lives in operator habit at the moment; worth writing down at the project's `README.md` or `CONTRIBUTING.md` level.
+What's owed but not yet shipped: a *canvas-mcp design principle doc* that names the two-customers framing explicitly so future tools (a hypothetical `canvas_compare()` or `canvas_history()`) are designed with both stakeholders in mind from the start. Lives in operator habit at the moment; worth writing down at the project's `README.md` or `CONTRIBUTING.md` level.
 
 ## The Durable Lesson
 
@@ -78,7 +78,7 @@ The corrected framing names the operator as a co-customer. For tools that produc
 
 The shape generalizes beyond canvas-mcp:
 
-- **A `screenshot()` MCP tool for any visual product.** Always returns a URL or file path the human can open; never base64-bytes-in-response.
+- **A `screenshot()` MCP tool for any visual product.** Returns a URL or file path the human can open, alongside (or instead of) the bytes the agent reads.
 - **A `diff()` MCP tool for code review.** The agent gets a small unified-diff text; the human gets a link to a rich diff view (GitHub PR, HTML diff, IDE-shaped surface).
 - **A `query()` MCP tool that runs database queries.** The agent gets a summary or the first N rows; the human gets a link to a queryable result view they can sort and filter.
 - **A `generate_audio()` or `generate_video()` MCP tool.** The agent gets a duration / metadata response; the human gets a playable file URL.

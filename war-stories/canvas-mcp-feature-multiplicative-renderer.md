@@ -3,19 +3,19 @@
 ## Date / Version Context
 
 - **Date:** Latent throughout canvas-mcp's phase-2 / phase-3 arc. Phase 2 and Phase 3 shipped 22 minutes apart on 2026-03-21 (commits `fc8cdb5` and `f8485bc`) — together ~1,500 LOC across components, icons, exports, presets, gradients, shadows, responsive, and diff. The cross-validation gap was identified in the 2026-05-09 self-interview; pixel-diff baselines are still not in place as of writing.
-- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. TypeScript monorepo, vanilla canvas rendering. The renderer accretes node properties across phases — each phase adds new fields to the node schema (`gradient`, `shadows`, `backdropBlur`, `componentId`, `overrides`) and corresponding handlers in `renderer.ts`.
-- **Surface for this story:** the renderer's test coverage. Per-phase tests exist (one test file per phase, exercising the new properties that phase added). What's missing: tests that take a representative *Phase 1 mockup* (no gradients, no shadows, no responsive) and verify it still renders identically after Phase 3's code has shipped.
+- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. A single-package Node/TypeScript project that renders a scene graph to HTML/CSS and screenshots it with Puppeteer. The renderer accretes node properties across phases — each phase adds new fields to the node schema (`gradient`, `shadows`, `backdropBlur`, `componentId`, `overrides`) and corresponding handlers in `renderer.ts`.
+- **Surface for this story:** the renderer's test coverage. Per-phase test scripts exist for Phases 2 and 3 (`test-phase2.ts`, `test-phase3.ts`), each exercising the features that phase added, plus `test-visual.ts`, which writes screenshots to a temp folder for a human to look at and compares them to nothing. Phase 1 shipped without a test file. What's missing: tests that take a representative *Phase 1 mockup* (no gradients, no shadows, no responsive) and verify it still renders identically after Phase 3's code has shipped.
 - **Glossary, used in this writeup:** *Per-phase test* = a test file that exercises the properties added in one phase, with fixtures that use only those properties. *Cross-phase test* = a test that exercises an older fixture against the current code path, verifying that the older fixture still produces the same output. *Pixel-diff baseline* = a snapshot of rendered output, byte-for-byte or perceptually compared on every change. *Latent regression* = a bug introduced in one phase that affects fixtures from an earlier phase, surfacing only when someone exercises an older fixture.
 
 ## What Was Being Attempted
 
 Build the renderer in phases, each phase adding properties and handlers.
 
-The plan was sensible. canvas-mcp's renderer started small — basic shapes (rect, circle, text), basic styling (fill color, stroke color, font), basic layout (absolute positioning). That was Phase 1. The renderer worked. Tests passed. The project moved to Phase 2.
+The plan was sensible. canvas-mcp's renderer started small — frames, text, rectangles, ellipses and images; fills, strokes, corner radius, fonts, a CSS-string `shadow`; flexbox layout with optional absolute positioning. That was Phase 1 (`2a9f23b`, 2026-03-19). The renderer worked. The project moved to Phase 2.
 
-Phase 2 added gradient fills, presets, and icon nodes. The renderer's `applyFill()` function gained a branch for gradient gradients. New tests verified that nodes with `gradient: { ... }` rendered correctly. The Phase 2 tests passed.
+Phase 2 (`fc8cdb5`) added reusable components (`componentId` plus named-child `overrides`, resolved at render time), Lucide icon nodes, file export, and four style presets. The renderer gained instance resolution and override application. `test-phase2.ts` verified the new features. The Phase 2 tests passed.
 
-Phase 3, shipped 22 minutes later, added shadow rendering (the structured `shadows: [{...}]` API), backdropBlur, componentId / overrides for design-system-style component instantiation, and responsive layout properties. The renderer's main rendering loop gained branches for each new property. New Phase 3 tests verified that nodes with `shadows: [...]`, with `backdropBlur: number`, with `componentId: string`, all rendered correctly. The Phase 3 tests passed.
+Phase 3 (`f8485bc`), shipped 22 minutes later, added linear and radial gradients, the structured `shadows: [{...}]` API, `blur` and `backdropBlur`, a `screenshot_responsive` tool that renders at several viewport widths, and a `canvas_diff` tool that pixel-diffs two canvases. `buildStyles()` in `renderer.ts` gained branches for the new properties. `test-phase3.ts` verified that nodes with `gradient`, `shadows` and `backdropBlur` rendered correctly. The Phase 3 tests passed.
 
 After the Phase 3 commit, the renderer's test suite looked complete. Every property had tests. Every test passed. The renderer was, by every check the codebase made, working.
 
@@ -25,20 +25,20 @@ What the codebase didn't check: **does a Phase 1 mockup still render the same wa
 
 Nothing yet, and that's the latent half of the story.
 
-The Phase 3 code touched `renderer.ts` in ways that could plausibly affect Phase 1 fixtures. The render loop now has new branches it didn't have before; the order of operations changed in a few places; the way `applyFill()` handles `undefined` vs. `null` for the new `gradient` property was tightened in a way that *might* interact with Phase 1's solid-fill code path.
+The Phase 3 code touched `renderer.ts` in ways that could plausibly affect Phase 1 fixtures. `buildStyles()` now chooses between `gradient` and the Phase 1 `fill` for the background, and between the new `shadows` array and the Phase 1 `shadow` string for `box-shadow`. Either choice *might* interact with a Phase 1 node's code path.
 
-No test catches this. The Phase 1 test file uses Phase 1 fixtures — `{ type: "rect", fill: "#4a90e2" }` style, no `gradient`, no `shadows`, no responsive properties. The fixtures still pass the Phase 1 test's assertions because the assertions are about Phase 1 properties. What the assertions don't say is *"and this canvas renders the same bytes it rendered six weeks ago."* They can't say that, because nobody saved a baseline.
+No test catches this. There is no Phase 1 test file at all, and the Phase 2 and Phase 3 scripts build fixtures around the features they introduced, so their assertions are about those features. A plain `{ type: "rectangle", fill: "#4a90e2" }` node is nobody's subject. What no assertion says is *"and this canvas renders the same bytes it rendered six weeks ago."* They can't say that, because nobody saved a baseline.
 
 The regression shape, if one exists, would look like this:
 
-1. A user has a Phase 1 mockup saved from before 2026-03-21. Nodes are basic shapes with solid fills. The mockup looks fine in the user's bookmarks/exports.
-2. After Phase 3 ships, the user opens that mockup. The renderer runs the *current* code against the *old* fixture. Something subtle in the new render path interacts with the fixture's basic-shape rendering — maybe the shadow code now eagerly evaluates a default shadow on every node, and the default looks wrong on shapes that never had shadows. Maybe the responsive layout code re-computes positions in a way the absolute-positioned Phase 1 fixture didn't account for.
+1. A user has a Phase 1 mockup from before 2026-03-21. Nodes are basic shapes with solid fills. The mockup looks fine in the user's exports. (Until `3e4201f` on 2026-04-11 canvases lived only in memory, so in practice "reopening" a March mockup meant replaying its `batch_design` operations; once canvases persisted to `~/.canvas-mcp/canvases/`, the scenario became literal.)
+2. After Phase 3 ships, the user opens that mockup. The renderer runs the *current* code against the *old* fixture. Something subtle in the new render path interacts with the fixture's basic-shape rendering — maybe the shadow code now eagerly evaluates a default shadow on every node, and the default looks wrong on shapes that never had shadows. Maybe the new gradient branch changes how a plain `fill` gets emitted.
 3. The mockup renders *almost the same* but not identically. Maybe a shadow appears where there shouldn't be one, or text shifts by a pixel, or a color hue drifts because of a new color-space conversion that wasn't there before.
 4. The user notices the difference and either reports a bug (if they remember what the mockup used to look like) or doesn't (if they don't). Either way, the regression has been live since Phase 3 shipped.
 
 The honest version of this story: **we don't know if this regression exists. Nobody has rendered the Phase 1 fixtures against the Phase 3 code with the original output saved alongside.** The risk is latent because the tooling to detect it doesn't exist. Pixel-diff baselines would catch it. Per-phase tests don't.
 
-The structural property worth naming: **feature growth in a renderer is not feature-additive; it's feature-multiplicative.** Each new property the renderer supports interacts with every existing property at the render path. Adding gradients in Phase 2 didn't just add a new branch — it changed the cross-product of *(N existing properties) × (1 new property) = N new interactions*. Phase 3 added five new properties, so the cross-product expanded by 5 × (previous N) plus 10 new pairs among the Phase 3 properties themselves. The interaction count grows quadratically; the per-phase test count grows linearly.
+The structural property worth naming: **feature growth in a renderer is not feature-additive; it's feature-multiplicative.** Each new property the renderer supports interacts with every existing property at the render path. Adding gradients in Phase 3 didn't just add a new branch — it changed the cross-product of *(N existing properties) × (1 new property) = N new interactions*. Phase 3 added four new node properties (`gradient`, `shadows`, `blur`, `backdropBlur`), so the cross-product expanded by 4 × (previous N) plus 6 new pairs among the Phase 3 properties themselves. The interaction count grows quadratically; the per-phase test count grows linearly.
 
 ## How It Was Discovered
 
@@ -52,7 +52,7 @@ This pattern recurs in the corpus often enough to be its own meta-lesson: **peri
 
 ## What Fixed It
 
-Nothing yet. The fix is pixel-diff regression baselines, and they're not in place.
+Nothing yet. The fix is pixel-diff regression baselines, and they're not in place. The irony: Phase 3 itself shipped `canvas_diff`, a pixel diff between two canvases. The comparison machinery existed; what didn't exist was a saved baseline to compare against.
 
 The mechanical shape would be:
 
@@ -63,7 +63,7 @@ The mechanical shape would be:
 
 The implementation is small — ~150 lines for the test harness, plus the baseline images themselves. The hard part isn't writing the code; it's curating the fixture library so it actually covers the cross-product of properties the renderer supports.
 
-What's owed but not yet shipped: the entire pipeline above. canvas-mcp's `VISION.md` has the item open. The structural rationale is in the source self-interview; the code is the next step.
+What's owed but not yet shipped: the entire pipeline above. It isn't on the roadmap either; `VISION.md` has no pixel-diff regression item. The only record of the gap is the self-interview.
 
 What didn't get attempted: trying to extend per-phase tests to cover cross-phase cases. The lesson rejects that direction. Per-phase tests use property-shaped assertions (*"this node has a gradient"*); cross-phase regression requires output-shaped assertions (*"this canvas's pixels match the baseline"*). The two are different categories of test. Adding more property-shaped tests doesn't catch what output-shaped tests catch.
 
@@ -87,7 +87,7 @@ In every case the rule is the same: **the unit-of-test should match the unit-of-
 
 The pairing worth naming: this is the *test-shape* version of the companion story `presentation-studio-mcp-feedback-loops.md`. Both stories argue that **the unit-of-evaluation has to match the unit-of-output.** Presentation-studio audits per-deck on every call because the deck is the output unit. canvas-mcp would diff per-fixture on every change because the rendered canvas is the output unit. Different domains (decks vs. canvases), different timing (runtime vs. CI), same structural principle: **eval the output, not the inputs to the output.**
 
-Also pairs with the companion story `canvas-mcp-half-built-evaluate.md`: same project, both stories about evaluation gaps. The half-built evaluator is a *richer scoring* that doesn't ship; the missing pixel-diff baselines are a *basic regression check* that doesn't ship either. canvas-mcp has audit-pipeline-shaped output (the rendered canvas is checkable) but has invested in neither layer of eval — neither the richer scoring nor the cheaper regression baseline. The two stories together make the project's eval gap concrete.
+Also pairs with the companion story `canvas-mcp-half-built-evaluate.md`: same project, both stories about evaluation gaps. The evaluator was a *richer scoring* that sat uncommitted until 2026-05-11, when it shipped as `canvas_evaluate`; the missing pixel-diff baselines are a *basic regression check* that still hadn't shipped. canvas-mcp has audit-pipeline-shaped output (the rendered canvas is checkable), and by the time this was written it had invested in the richer layer of eval but not the cheaper regression baseline. The two stories together make the project's eval gap concrete.
 
 ## Counter-Example — When This Lesson Doesn't Apply
 

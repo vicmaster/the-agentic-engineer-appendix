@@ -2,38 +2,38 @@
 
 ## Date / Version Context
 
-- **Date:** Indeterminate — `evaluate.ts` has been on disk for months without a commit. The file was first noticed during the 2026-05-09 self-interview, but its mtime suggests it's been in this half-built state since at least Phase 2 of canvas-mcp's build (2026-03).
-- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. TypeScript monorepo. As of writing the public repo has v0.1 shipped with 13 MCP tools, 15 layouts, 12 audit rules (in `auditDeck.ts`, *not* in `evaluate.ts`), 7 templates.
-- **Surface for this story:** `evaluate.ts` itself — its existence on disk, its line count, its sibling `test-evaluate.ts`, and the gap between *the file the working tree contains* and *the functionality the project actually ships*. The shipped audit pipeline (`auditDeck.ts` + the twelve rules in `audit/rules/`) is a different code path entirely. The half-built `evaluate.ts` was a parallel attempt at a richer scorer, never finished, never committed, never gated, never deleted.
+- **Date:** On disk and uncommitted from no later than 2026-04-01 (that's when the committed `src/index.ts`, in `88b5471`, started importing `./evaluate.js` and registering `canvas_evaluate`) until 2026-05-11, when it was committed in `4289ca2`. First flagged as a problem during the 2026-05-09 self-interview.
+- **Project:** canvas-mcp — open-source MCP server for AI-driven design mockups. A single-package Node/TypeScript npm project. At v0.1 (`3e4201f`, 2026-04-11) it had 16 MCP tools, one of which (`canvas_evaluate`) depended on the uncommitted file. It had no other evaluation or audit code: no audit rules, no layouts, no templates, just four style presets and DESIGN.md import.
+- **Surface for this story:** `evaluate.ts` itself — its existence on disk, its line count, its sibling `test-evaluate.ts`, and the gap between *the file the working tree contained* and *what the repository could actually reproduce*. There was no other evaluation code path in canvas-mcp. Until 2026-05-11 the file was never committed, never gated, never deleted.
 - **Glossary, used in this writeup:** *Half-built eval surface* = a partly-implemented evaluation or scoring path that exists in the codebase but doesn't function as advertised. *Honest absence* = the state where a feature is plainly missing and any reader can see it's missing. *Confident wrongness* = the state where a feature appears to exist (file present, structure plausible, types resolve) but doesn't actually deliver what its presence implies. *Working-tree implication* = the inferences a future reader (human or agent) draws from files present in the checkout, regardless of whether they're in version control.
 
 ## What Was Being Attempted
 
-A richer evaluator for canvas mockups, beyond the rule-based audit.
+A scorer for canvas mockups.
 
-The shipped audit pipeline in `auditDeck.ts` checks structural facts — layout in the known enum, density per layout, missing required fields, contrast risk, element bounds. Twelve rules, each focused, each fast, each producing a structured `AuditIssue`. The audit pipeline is the *eval* in the truest sense — *the audit is the eval* — and it works.
+canvas-mcp had no evaluation of its own. The agent rendered, looked at a screenshot, and decided; any quality judgement lived in the agent's glance or the human's eye.
 
-`evaluate.ts` was an attempt at something more ambitious: a scorer that grades mockups across layout, typography, and contrast dimensions, emits issues with severities, and produces a quality signal richer than the audit's pass/fail-per-rule shape. The intuition was that the audit could tell you *what's wrong* but not *how good* — and a richer evaluator could close that gap, producing per-design quality scores the agent could iterate against.
+`evaluate.ts` was the attempt to change that: a scorer that grades a canvas 0-100 across spacing, color contrast, typography, structure and consistency, and returns issues that point at specific node IDs. The intuition was that the agent needed a *how good* signal it could iterate against, not just its own look at a screenshot.
 
-The work started. It progressed far enough to draft 629 lines of TypeScript and a test file. It stopped — the way features stop when someone gets pulled to something more urgent. There's no incident behind the stop. There's a *vacancy*: 629 lines of typed code that almost-but-doesn't compile, alongside a test file that exercises functions that almost-but-don't exist.
+The work started. It progressed to 629 lines of TypeScript and a 183-line test file, and the MCP entry point was wired to it. Then it stopped — the way features stop when someone gets pulled to something more urgent. There's no incident behind the stop. There's a *vacancy*: 629 lines the author didn't consider finished, sitting outside version control while committed code depended on them.
 
-The file has never been committed. The project ships v0.1 with the audit pipeline and not the evaluator. The README mentions audit rules; it does not mention evaluation. By every shipped signal the project has no scorer.
+The file was never committed during that stretch, and the README never mentioned evaluation. But the committed `src/index.ts` imported `./evaluate.js` and registered a `canvas_evaluate` tool whose description promised a 0-100 score. So the shipped signals disagreed with each other: the docs said nothing, the tool list advertised a scorer, and a fresh clone couldn't build, because the module its entry point imported wasn't in the repository.
 
 By every signal a reader of the working tree can see, the project *has* a scorer.
 
 ## What Went Wrong
 
-Nothing operationally, and that's the story.
+Nothing loud, and that's the story.
 
-The file does not run. The shipped product does not import it. The CI does not test it. Production users of canvas-mcp (the agents calling its MCP tools) never touch it. By every measure that involves *executing the code*, the file is inert.
+The committed entry point imported the file, so wherever it existed, `canvas_evaluate` was a live tool. Nowhere else could run it. A fresh clone was missing the module its entry point imported, there was no CI to notice, and the README never mentioned the tool. By every measure that involves *the repository*, the feature didn't exist.
 
-By every measure that involves *reading the code*, the file is load-bearing.
+By every measure that involves *reading the working tree*, the file was load-bearing.
 
 Three readers stand to be misled by the file's presence:
 
 **The author's future self.** Coming back to canvas-mcp after a few months, the operator opens the project, sees `evaluate.ts` in the file tree, and reasons: *I built a scorer; it must work or be close to working.* That mental model — formed by glancing at the working tree — is wrong. The work to recover from the wrong model is at least an hour of reading the file end-to-end to discover the gap between what's there and what runs. Multiply this by every project where the operator left half-built features in the tree.
 
-**A future contributor.** An open-source contributor cloning the repo sees `evaluate.ts`, assumes evaluation is a project feature, and submits a PR that integrates the (broken) evaluator into the shipped pipeline. The PR's author has spent real time on the integration before noticing the underlying file is unfinished. The PR's reviewer either accepts a broken integration or rejects it after the contributor has put in work that depends on the file being complete. Either outcome wastes someone's effort.
+**A future contributor.** An open-source contributor cloning the repo hits a build that can't find `./evaluate.js`, because the entry point imports a file that was never committed. They stub the tool out, assume the scorer was deleted on purpose, or open an issue. Each of those spends someone's time on a feature that exists on one machine.
 
 **An agent reading the codebase.** This is the angle worth pausing on. Agents working in agentic-development workflows read codebases. A Claude Code session pointed at canvas-mcp, asked to *explain the project's architecture*, sees `evaluate.ts` and reasons as if it's load-bearing. The agent's output — to the operator, to a teammate, to a downstream document — encodes the false claim that canvas-mcp has self-evaluation. The agent isn't wrong to draw the inference; the working tree implies it. The agent is wrong about the world, and the cause is the file's presence.
 
@@ -43,23 +43,23 @@ This last reader is the one that matters most for an agentic-development book. *
 
 Writing the self-interview.
 
-This is the discovery channel worth pausing on a second time. The file has been on disk for months. The operator has worked in the canvas-mcp directory many times since. No process flagged the file. No `git status` was suspicious — the file is tracked-by-absence (it's gitignored or simply uncommitted; either way `git status` says *clean working tree* or *untracked* in a way easy to skim past). No CI failed because the file isn't in any CI path. The lint passes because the file's syntax is valid TypeScript even if it doesn't link.
+This is the discovery channel worth pausing on a second time. The file had been on disk for weeks. The operator had worked in the canvas-mcp directory many times since. No process flagged the file. `git status` listed it as untracked, in a way that's easy to skim past. There was no CI to fail, and the local build passed because the file was right there.
 
-The discovery came from a deliberate full-repo retrospective: the self-interview asked *where did the project bite you?* and the operator scanned the codebase end-to-end for the first time in months. The 629-line file in the working tree stood out the moment someone looked.
+The discovery came from a deliberate full-repo retrospective: the self-interview asked *where did the project bite you?* and the operator scanned the codebase end-to-end for the first time in weeks. The 629-line file in the working tree stood out the moment someone looked.
 
 This is the latent-discovery shape from the companion story `forge-redaction-never-fired.md` at a different layer. That story is a control that hasn't been exercised; this story is a file that hasn't been examined. Both are *invisible-to-tools* states caught only by deliberate operator attention. Both argue for periodic full-repo retrospectives — not because every retrospective will find something, but because the things they find are uniquely hard to find any other way.
 
 ## What Fixed It
 
-Nothing yet, and that's worth being honest about. The discipline moves are queued, not landed:
+At the time of the self-interview, nothing. Two days later (2026-05-11, `4289ca2`) the file took the second of the three honest exits below: `evaluate.ts` and its 183-line `test-evaluate.ts` were committed, and the README and `VISION.md` documented `canvas_evaluate` as a heuristic 0-100 scorer with `fast` and `detailed` modes. The discipline moves the story argued for:
 
 1. **Decide the file's fate.** One of three honest outcomes: commit it as experimental behind a flag (`EXPERIMENTAL_EVALUATE_TS=true` gating the import, plus a README note that says *"This is incomplete, don't trust the output"*), finish the work and commit a working version, or delete the file. Sitting half-built in the working tree is not on the list of honest outcomes.
 
-2. **A working-tree audit cadence.** Once a quarter, scan the project for files-not-in-git over a size threshold. The 629-line file would have surfaced months ago if anyone had been looking. The audit is cheap: `git status --porcelain` + a size filter. The expensive part is acting on what it surfaces, not finding it.
+2. **A working-tree audit cadence.** Once a quarter, scan the project for files-not-in-git over a size threshold. The 629-line file would have surfaced weeks earlier if anyone had been looking. The audit is cheap: `git status --porcelain` + a size filter. The expensive part is acting on what it surfaces, not finding it.
 
 3. **A repo-readme expectations check.** Whatever the README says the project does, the working tree should not imply *more*. If the README doesn't mention scoring, files named `evaluate.ts` and `test-evaluate.ts` are misleading-by-presence. Either align the README with the working tree, or align the working tree with the README. The mismatch is the bug.
 
-What didn't get attempted: trying to *finish* the evaluator quickly to validate it. The lesson explicitly rejects that direction. A half-finished feature being rushed to half-plus-half-finished is still half-built. The structural moves above (decide, audit, align) are operator discipline; finishing the work — if it's worth finishing — happens after the discipline is in place, not as a way to avoid the discipline.
+What the lesson warns against is rushing a half-finished feature to half-plus-half-finished just so the file stops looking bad. The structural moves above (decide, audit, align) are operator discipline; finishing the work, if it's worth finishing, happens as a deliberate decision, not as a way to avoid the discipline. The 2026-05-11 commit landed the code together with its tests, README section and roadmap entry.
 
 ## The Durable Lesson
 
@@ -95,7 +95,7 @@ The signal: *if I left this project for six months and came back, would the file
 ## What This Story Is *Not* Evidence For
 
 - **Not evidence that experiments shouldn't be tried.** They should. The lesson is about *abandoned experiments left in the working tree without status signal*, not about whether to try ambitious work. Finish the experiment, gate it behind an experimental flag with a README warning, or delete it — but trying it isn't the bug.
-- **Not evidence that canvas-mcp's shipped audit pipeline is inadequate.** It works; it stands as the worked example of *the audit is the eval*. The half-built `evaluate.ts` was a parallel attempt at something richer, not a replacement for the audit. The shipped pipeline does its job.
+- **Not evidence that the scorer was a bad idea.** It shipped two days after the self-interview as `canvas_evaluate`, and on 2026-05-16 gained a benchmark suite, auto-fix suggestions and an LLM-as-judge mode. The problem was the stretch where the working tree implied it and the repository didn't hold it.
 - **Not evidence that the author was careless.** The file got abandoned the way features get abandoned in real projects — someone got pulled to something more urgent, the work paused, the file sat. The structural fix is *catching the abandoned state*, not *blaming the abandonment*.
 - **Not evidence that all uncommitted files are misleading.** They aren't. The lesson is about *large, structured files that imply project functionality*. A `.env` file, a `node_modules/` dir, a `tmp/` scratch directory — all expected to be uncommitted, none of them imply load-bearing project behavior.
 - **Not evidence that agents are uniquely vulnerable.** Humans are vulnerable too. The lesson is that *agents are vulnerable in one turn* — they integrate working-tree state into a confident output faster than a human would, which makes the misleading-by-presence shape sharper in agentic workflows. But the root cause is the working-tree state, not the agent.
