@@ -123,7 +123,7 @@ def call(messages:, system:, cacheable_blocks: [])
 end
 ```
 
-The capability emits the bucket on every call. Today it lands in `result_meta[:cache_status]`; the structural fix (still queued) is to emit a metric on `provider.cache.bucket` so the failure shape becomes alertable:
+The capability emits the bucket on every call. Today it lands in `result_meta[:cache_status]`; the structural fix (still queued) is to emit a `provider.cache.calls` counter tagged with the bucket so the failure shape becomes alertable:
 
 ```ruby
 # Pseudocode for the metric emission that closes the loop:

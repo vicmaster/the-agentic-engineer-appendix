@@ -195,12 +195,12 @@ The principle: **the audit's findings being clean is the trust signal, not the a
 ```
 # Pseudocode: telemetry verification as the trust signal
 
-function callProviderWithCache(messages, system, cacheableBlocks):
-    response = providerSDK.call(messages, system, cacheableBlocks)
-    bucket   = classifyCacheCall(response, cacheableBlocks)
+function callProviderWithCache(request):
+    response = providerSDK.call(request)
+    bucket   = classifyCacheCall(response, request)
 
     # Emit the verification record on every claim-bearing call
-    metrics.emit("provider.cache.bucket", value=bucket, tags={...})
+    metrics.increment("provider.cache.calls", tags={bucket: bucket, ...})
 
     return {
         content:     response.content,
@@ -209,10 +209,11 @@ function callProviderWithCache(messages, system, cacheableBlocks):
     }
 
 # Bucketing — the structural check that survives the SDK's success path
-function classifyCacheCall(response, cacheableBlocks):
+function classifyCacheCall(response, request):
     if response.usage.cacheReadTokens > 0:     return CACHED
     if response.usage.cacheCreationTokens > 0: return SEEDED
-    if size(cacheableBlocks) < CACHE_FLOOR:    return BELOW_FLOOR
+    # the floor applies to the whole prefix up to the cache breakpoint
+    if tokenCount(request, upToLastCacheBreakpoint) < CACHE_FLOOR: return BELOW_FLOOR
     return NONE  # above floor, both counters zero — the failure shape
 ```
 

@@ -200,14 +200,15 @@ If you retry a failed call, the cache might be cold (TTL expired) or warm depend
 The deep bucketing pattern lives in [`../C-recipes/observability-across-stacks.md`](../C-recipes/observability-across-stacks.md) (Implementation 1) and [`../C-recipes/runtime-trust-patterns.md`](../C-recipes/runtime-trust-patterns.md) (Layer 3). Re-stated here for completeness:
 
 ```
-function classifyCacheCall(response, cacheableBlocks):
-    creation = response.usage.cacheCreationTokens
-    read     = response.usage.cacheReadTokens
-    blockSize = sum(sizeOf(b) for b in cacheableBlocks)
+function classifyCacheCall(response, request):
+    creation   = response.usage.cacheCreationTokens
+    read       = response.usage.cacheReadTokens
+    # the floor applies to the whole prefix up to the cache breakpoint, not one block
+    prefixSize = tokenCount(request, upToLastCacheBreakpoint)
 
     if read > 0:                    return CACHED
     if creation > 0:                return SEEDED
-    if blockSize < CACHE_FLOOR:     return BELOW_FLOOR
+    if prefixSize < CACHE_FLOOR:    return BELOW_FLOOR
     return NONE   # above floor, both counters zero — the failure shape
 ```
 
@@ -220,7 +221,7 @@ The infrastructure-claim test from Ch. 3: *for every provider feature you've tur
 ## Cross-references
 
 - Ch. 3 (Context as a Budget) — full chapter treatment.
-- Ch. 8 (Observability) — the bucketing pattern recast as a verification record (`provider.cache.bucket` metric).
+- Ch. 8 (Observability) — the bucketing pattern recast as a verification record (a `provider.cache.calls` counter tagged with the bucket).
 - `war-stories/forge-prompt-cache-minimum.md` — the source incident.
 - [`../C-recipes/observability-across-stacks.md`](../C-recipes/observability-across-stacks.md) — Implementation 1 (the Ruby `compute_cache_status` method, the `:cached`/`:seeded`/`:below_floor`/`:none` buckets).
 - [`../C-recipes/runtime-trust-patterns.md`](../C-recipes/runtime-trust-patterns.md) — Layer 3 (telemetry verification as the runtime trust signal).
