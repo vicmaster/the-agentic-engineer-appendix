@@ -21,6 +21,7 @@ One entry per topic per provider (or per harness, for harness-specific behaviors
 
 ## Entries
 
+- [`stop-reasons.md`](stop-reasons.md) — from Ch. 1 and Ch. 2 (`stop_reason`, `finish_reason`, `status` / `incomplete_details`, `finishReason` by provider, with Ruby and TypeScript versions of the check).
 - [`anthropic-prompt-caching.md`](anthropic-prompt-caching.md) — from Ch. 3 (`cache_creation_input_tokens`, `cache_read_input_tokens`, `cache_control: { type: "ephemeral" }`, the cache-floor minimum).
 - [`harness-limits.md`](harness-limits.md) — from Ch. 4 and Ch. 7 (MCP server lifecycle, AskUserQuestion 89ms auto-resolution, sub-agent delegation depth = 1).
 - [`harness-affordances.md`](harness-affordances.md) — from Ch. 9 and Ch. 11 (`disable-model-invocation` per-skill flag, auto-memory layer, consent gate mechanics).
